@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Generator</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface-light: #2a2a2a;
+            --text: #f0f0f0;
+            --text-muted: #888;
+            --border: #333;
+            --success: #22c55e;
+            --gradient: linear-gradient(135deg, #6366f1, #a855f7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        body.rtl {
+            direction: rtl;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+        }
+
+        .lang-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .lang-btn {
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        /* Fix for autofill and filled inputs - keep dark background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 1000px var(--surface-light) inset !important;
+            -webkit-text-fill-color: var(--text) !important;
+            background-color: var(--surface-light) !important;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .item-card {
+            background: var(--surface-light);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .item-card.removable .remove-btn {
+            display: block;
+        }
+
+        body.rtl .remove-btn {
+            right: auto;
+            left: 0.5rem;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: transparent;
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            margin-top: 2rem;
+            background: var(--gradient);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            .footer {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top: 2rem;
+                padding-bottom: 2rem;
+                width: 100%;
+            }
+
+            .heart {
+                color: #b91c1c;
+                display: block;
+                animation: beat 1s infinite alternate;
+            }
+
+            @keyframes beat {
+                to {
+                    transform: scale(1.1);
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="title">CV Generator</h1>
+            <p class="subtitle" id="subtitle">Create ATS-Friendly Resumes</p>
+        </div>
+
+        <div class="lang-toggle">
+            <button class="lang-btn active" onclick="setLang('en')" id="btnEn">English</button>
+            <button class="lang-btn" onclick="setLang('ar')" id="btnAr">العربية</button>
+        </div>
+
+        <div class="card">
+            <input type="hidden" id="language" value="en">
+
+            <!-- Template Selector -->
+            <div class="section-title" data-en="Choose Template" data-ar="اختر القالب">Choose Template</div>
+            <div class="form-group">
+                <select id="template" class="template-select">
+                    <option value="classic" data-en="Classic - Black & White" data-ar="كلاسيكي - أبيض وأسود">Classic -
+                        Black & White</option>
+                    <option value="modern" data-en="Modern - Blue Theme" data-ar="عصري - أزرق">Modern - Blue Theme
+                    </option>
+                    <option value="minimal" data-en="Minimal - Green Theme" data-ar="بسيط - أخضر">Minimal - Green Theme
+                    </option>
+                    <option value="executive" data-en="Executive - Purple Header" data-ar="تنفيذي - رأس بنفسجي">
+                        Executive - Purple Header</option>
+                    <option value="compact" data-en="Compact - Orange Accent" data-ar="مضغوط - برتقالي">Compact - Orange
+                        Accent</option>
+                </select>
+            </div>
+
+            <div class="section-title" data-en="Personal Information" data-ar="المعلومات الشخصية">Personal Information
+            </div>
+
+            <div class="form-group">
+                <label data-en="Full Name" data-ar="الاسم الكامل">Full Name</label>
+                <input type="text" id="fullName" data-ph-en="John Doe" data-ph-ar="الاسم الكامل" placeholder="John Doe">
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</label>
+                    <input type="text" id="jobTitle" data-ph-en="Software Engineer" data-ph-ar="مهندس برمجيات"
+                        placeholder="Software Engineer">
+                </div>
+                <div class="form-group">
+                    <label data-en="Email" data-ar="البريد">Email</label>
+                    <input type="email" id="email" placeholder="email@example.com">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label data-en="Phone" data-ar="الهاتف">Phone</label>
+                    <input type="tel" id="phone" data-ph-en="+1 234 567 890" data-ph-ar="+966 50 000 0000"
+                        placeholder="+1 234 567 890">
+                </div>
+                <div class="form-group">
+                    <label data-en="Location" data-ar="الموقع">Location</label>
+                    <input type="text" id="location" data-ph-en="New York, USA" data-ph-ar="الرياض، السعودية"
+                        placeholder="New York, USA">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label data-en="LinkedIn" data-ar="لينكدإن">LinkedIn</label>
+                <input type="text" id="linkedin" placeholder="linkedin.com/in/username">
+            </div>
+
+            <div class="form-group">
+                <label data-en="Professional Summary" data-ar="الملخص المهني">Professional Summary</label>
+                <textarea id="summary" rows="3" data-ph-en="Brief overview of your career..."
+                    data-ph-ar="نبذة مختصرة عن مسيرتك المهنية..."
+                    placeholder="Brief overview of your career..."></textarea>
+            </div>
+
+            <div class="section-title" data-en="Experience" data-ar="الخبرة العملية">Experience</div>
+            <div id="experiences"></div>
+            <button class="add-btn" onclick="addExp()" data-en="+ Add Experience" data-ar="+ إضافة خبرة">+ Add
+                Experience</button>
+
+            <div class="section-title" data-en="Education" data-ar="التعليم">Education</div>
+            <div id="education"></div>
+            <button class="add-btn" onclick="addEdu()" data-en="+ Add Education" data-ar="+ إضافة تعليم">+ Add
+                Education</button>
+
+            <div class="section-title" data-en="Skills" data-ar="المهارات">Skills</div>
+            <div class="form-group">
+                <textarea id="skills" rows="2" data-ph-en="Python, JavaScript, React..."
+                    data-ph-ar="Python, JavaScript, React..." placeholder="Python, JavaScript, React..."></textarea>
+            </div>
+
+            <button class="submit-btn" onclick="generate()" data-en="Generate CV"
+                data-ar="إنشاء السيرة الذاتية">Generate CV</button>
+        </div>
+
+        <div class="footer">
+            <svg class="heart" viewBox="0 0 24 24" width="32" height="32" fill="#b91c1c">
+                <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        let expCount = 0, eduCount = 0, lang = 'en';
+
+        // Labels for dynamic fields
+        const labels = {
+            en: {
+                title: 'Title', company: 'Company', start: 'Start', end: 'End', description: 'Description',
+                degree: 'Degree', school: 'School', field: 'Field', year: 'Year',
+                phTitle: 'Developer', phCompany: 'Company', phStart: '2020', phEnd: 'Present', phDesc: 'Key responsibilities...',
+                phDegree: 'BSc', phSchool: 'University', phField: 'Computer Science'
+            },
+            ar: {
+                title: 'المسمى الوظيفي', company: 'الشركة', start: 'من', end: 'إلى', description: 'الوصف',
+                degree: 'الدرجة العلمية', school: 'الجامعة', field: 'التخصص', year: 'السنة',
+                phTitle: 'مطور', phCompany: 'شركة', phStart: '2020', phEnd: 'الآن', phDesc: 'وصف المهام...',
+                phDegree: 'بكالوريوس', phSchool: 'الجامعة', phField: 'علوم الحاسب'
+            }
+        };
+
+        function setLang(l) {
+            lang = l;
+            document.getElementById('language').value = l;
+            document.body.classList.toggle('rtl', l === 'ar');
+            document.getElementById('btnEn').classList.toggle('active', l === 'en');
+            document.getElementById('btnAr').classList.toggle('active', l === 'ar');
+            document.getElementById('title').textContent = l === 'ar' ? 'منشئ السيرة الذاتية' : 'CV Generator';
+            document.getElementById('subtitle').textContent = l === 'ar' ? 'أنشئ سيرة ذاتية احترافية' : 'Create ATS-Friendly Resumes';
+
+            // Update static labels
+            document.querySelectorAll('[data-' + l + ']').forEach(el => {
+                el.textContent = el.getAttribute('data-' + l);
+            });
+            document.querySelectorAll('[data-ph-' + l + ']').forEach(el => {
+                el.placeholder = el.getAttribute('data-ph-' + l);
+            });
+
+            // Update dynamic experience/education labels
+            updateDynamicLabels();
+        }
+
+        function updateDynamicLabels() {
+            const lb = labels[lang];
+
+            // Experience labels
+            document.querySelectorAll('.item-card[id^="exp"] label[data-field]').forEach(lbl => {
+                const field = lbl.getAttribute('data-field');
+                lbl.textContent = lb[field] || field;
+            });
+            document.querySelectorAll('.item-card[id^="exp"] input[data-ph-field], .item-card[id^="exp"] textarea[data-ph-field]').forEach(inp => {
+                const field = inp.getAttribute('data-ph-field');
+                inp.placeholder = lb[field] || '';
+            });
+
+            // Education labels
+            document.querySelectorAll('.item-card[id^="edu"] label[data-field]').forEach(lbl => {
+                const field = lbl.getAttribute('data-field');
+                lbl.textContent = lb[field] || field;
+            });
+            document.querySelectorAll('.item-card[id^="edu"] input[data-ph-field]').forEach(inp => {
+                const field = inp.getAttribute('data-ph-field');
+                inp.placeholder = lb[field] || '';
+            });
+        }
+
+        function addExp(isFirst = false) {
+            expCount++;
+            const lb = labels[lang];
+            const removableClass = isFirst ? '' : 'removable';
+
+            document.getElementById('experiences').insertAdjacentHTML('beforeend', `
+                <div class="item-card ${removableClass}" id="exp${expCount}">
+                    <button class="remove-btn" onclick="document.getElementById('exp${expCount}').remove()">×</button>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="title">${lb.title}</label>
+                            <input type="text" class="exp-title" data-ph-field="phTitle" placeholder="${lb.phTitle}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="company">${lb.company}</label>
+                            <input type="text" class="exp-company" data-ph-field="phCompany" placeholder="${lb.phCompany}">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="start">${lb.start}</label>
+                            <input type="text" class="exp-start" data-ph-field="phStart" placeholder="${lb.phStart}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="end">${lb.end}</label>
+                            <input type="text" class="exp-end" data-ph-field="phEnd" placeholder="${lb.phEnd}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label data-field="description">${lb.description}</label>
+                        <textarea class="exp-desc" rows="2" data-ph-field="phDesc" placeholder="${lb.phDesc}"></textarea>
+                    </div>
+                </div>
+            `);
+        }
+
+        function addEdu(isFirst = false) {
+            eduCount++;
+            const lb = labels[lang];
+            const removableClass = isFirst ? '' : 'removable';
+
+            document.getElementById('education').insertAdjacentHTML('beforeend', `
+                <div class="item-card ${removableClass}" id="edu${eduCount}">
+                    <button class="remove-btn" onclick="document.getElementById('edu${eduCount}').remove()">×</button>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="degree">${lb.degree}</label>
+                            <input type="text" class="edu-degree" data-ph-field="phDegree" placeholder="${lb.phDegree}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="school">${lb.school}</label>
+                            <input type="text" class="edu-school" data-ph-field="phSchool" placeholder="${lb.phSchool}">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="field">${lb.field}</label>
+                            <input type="text" class="edu-field" data-ph-field="phField" placeholder="${lb.phField}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="year">${lb.year}</label>
+                            <input type="text" class="edu-year" placeholder="2020">
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        async function generate() {
+            document.getElementById('loading').classList.add('show');
+            try {
+                const data = {
+                    language: document.getElementById('language').value,
+                    template: document.getElementById('template').value,
+                    full_name: document.getElementById('fullName').value,
+                    job_title: document.getElementById('jobTitle').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    location: document.getElementById('location').value,
+                    linkedin: document.getElementById('linkedin').value,
+                    summary: document.getElementById('summary').value,
+                    skills: document.getElementById('skills').value,
+                    experiences: [],
+                    education: []
+                };
+
+                document.querySelectorAll('.item-card[id^="exp"]').forEach(item => {
+                    data.experiences.push({
+                        title: item.querySelector('.exp-title').value,
+                        company: item.querySelector('.exp-company').value,
+                        start_date: item.querySelector('.exp-start').value,
+                        end_date: item.querySelector('.exp-end').value,
+                        description: item.querySelector('.exp-desc').value
+                    });
+                });
+
+                document.querySelectorAll('.item-card[id^="edu"]').forEach(item => {
+                    data.education.push({
+                        degree: item.querySelector('.edu-degree').value,
+                        school: item.querySelector('.edu-school').value,
+                        field: item.querySelector('.edu-field').value,
+                        year: item.querySelector('.edu-year').value
+                    });
+                });
+
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${data.full_name.replace(/\s+/g, '_') || 'cv'}.pdf`;
+                    a.click();
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'Unknown'));
+                }
+            } catch (e) {
+                alert('Error: ' + e);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        // Initialize with first items (no remove button)
+        addExp(true);
+        addEdu(true);
+    </script>
+</body>
+
+</html>
