@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CV Generator</title>
+    <title>CV Generator — Professional Resume Builder</title>
+    <meta name="description"
+        content="Create ATS-friendly professional resumes with 9 beautiful templates. Supports English and Arabic.">
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
@@ -14,14 +16,26 @@
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --bg: #0f0f0f;
-            --surface: #1a1a1a;
-            --surface-light: #2a2a2a;
-            --text: #f0f0f0;
-            --text-muted: #888;
-            --border: #333;
+            --primary-light: #818cf8;
+            --bg: #09090b;
+            --bg-subtle: #0e0e12;
+            --surface: rgba(24, 24, 32, 0.75);
+            --surface-solid: #18181f;
+            --surface-light: rgba(38, 38, 50, 0.65);
+            --surface-hover: rgba(45, 45, 60, 0.7);
+            --text: #f4f4f5;
+            --text-secondary: #d4d4d8;
+            --text-muted: #71717a;
+            --border: rgba(63, 63, 80, 0.5);
+            --border-light: rgba(63, 63, 80, 0.25);
             --success: #22c55e;
-            --gradient: linear-gradient(135deg, #6366f1, #a855f7);
+            --error: #ef4444;
+            --gradient: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+            --gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1));
+            --glow: 0 0 60px rgba(99, 102, 241, 0.15);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-xs: 6px;
         }
 
         * {
@@ -31,11 +45,11 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding: 2rem;
+            overflow-x: hidden;
         }
 
         body.rtl {
@@ -43,204 +57,558 @@
             font-family: 'Cairo', sans-serif;
         }
 
+        /* ============ BACKGROUND EFFECTS ============ */
+        .bg-effects {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .bg-orb:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            background: #6366f1;
+            top: -200px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-orb:nth-child(2) {
+            width: 500px;
+            height: 500px;
+            background: #a855f7;
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -7s;
+        }
+
+        .bg-orb:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            background: #ec4899;
+            top: 40%;
+            left: 60%;
+            animation-delay: -14s;
+            opacity: 0.08;
+        }
+
+        @keyframes orbFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -30px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        /* ============ LAYOUT ============ */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            padding: 2rem 1.5rem 4rem;
+        }
+
         .container {
-            max-width: 700px;
+            max-width: 780px;
             margin: 0 auto;
         }
 
+        /* ============ HEADER ============ */
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: var(--gradient);
+            border-radius: 18px;
+            font-size: 28px;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 8px 48px rgba(99, 102, 241, 0.5);
+            }
         }
 
         h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 2.75rem;
+            font-weight: 800;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
         }
 
         .subtitle {
             color: var(--text-muted);
+            font-size: 1.05rem;
+            margin-top: 0.6rem;
+            font-weight: 400;
         }
 
+        /* ============ LANGUAGE TOGGLE ============ */
         .lang-toggle {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 4px;
             margin-bottom: 2rem;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            padding: 4px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid var(--border-light);
         }
 
         .lang-btn {
-            padding: 0.5rem 1.5rem;
-            border: 1px solid var(--border);
-            background: var(--surface);
+            padding: 0.55rem 1.75rem;
+            border: none;
+            background: transparent;
             color: var(--text-muted);
-            border-radius: 2rem;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
         }
 
         .lang-btn.active {
-            background: var(--primary);
+            background: var(--gradient);
             color: white;
-            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
         }
 
-        .card {
+        .lang-btn:not(.active):hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ============ MAIN CARD ============ */
+        .main-card {
             background: var(--surface);
-            border-radius: 1rem;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: var(--radius);
             padding: 2rem;
             border: 1px solid var(--border);
+            box-shadow: var(--glow);
+            animation: fadeInUp 0.6s ease-out 0.2s both;
         }
 
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 1rem;
-            margin-top: 1.5rem;
+        /* ============ SECTION HEADERS ============ */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 1.25rem;
+            margin-top: 2rem;
         }
 
-        .section-title:first-of-type {
+        .section-header:first-child {
             margin-top: 0;
         }
 
+        .section-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            background: var(--gradient-subtle);
+            border-radius: var(--radius-xs);
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ============ TEMPLATE GRID ============ */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .template-card {
+            position: relative;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 0.75rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--surface-light);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .template-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color, var(--primary));
+            opacity: 0.6;
+            transition: opacity 0.3s, height 0.3s;
+        }
+
+        .template-card:hover {
+            border-color: var(--card-color, var(--primary));
+            background: var(--surface-hover);
+            transform: translateY(-2px);
+        }
+
+        .template-card:hover::before {
+            opacity: 1;
+        }
+
+        .template-card.selected {
+            border-color: var(--card-color, var(--primary));
+            background: var(--surface-hover);
+            box-shadow: 0 0 20px rgba(var(--card-color-rgb, 99, 102, 241), 0.2);
+        }
+
+        .template-card.selected::before {
+            opacity: 1;
+            height: 4px;
+        }
+
+        .template-card .check-mark {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 20px;
+            height: 20px;
+            background: var(--card-color, var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: white;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s;
+        }
+
+        body.rtl .template-card .check-mark {
+            right: auto;
+            left: 8px;
+        }
+
+        .template-card.selected .check-mark {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .template-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            font-weight: 700;
+        }
+
+        .template-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .template-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* ============ FORM ELEMENTS ============ */
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 0.9rem;
         }
 
         label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
+            font-weight: 500;
         }
 
         input,
         textarea,
         select {
             width: 100%;
-            padding: 0.75rem 1rem;
-            background: var(--surface-light);
+            padding: 0.7rem 0.9rem;
+            background: rgba(30, 30, 42, 0.8);
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
+            border-radius: var(--radius-xs);
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-family: inherit;
-            transition: border-color 0.2s;
+            transition: all 0.25s;
         }
 
-        /* Fix for autofill and filled inputs - keep dark background */
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px var(--surface-light) inset !important;
+            -webkit-box-shadow: 0 0 0 1000px rgba(30, 30, 42, 0.95) inset !important;
             -webkit-text-fill-color: var(--text) !important;
-            background-color: var(--surface-light) !important;
         }
 
         input:focus,
-        textarea:focus {
+        textarea:focus,
+        select:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.5 1.5 4h9z' fill='%2371717a'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 2rem;
+        }
+
+        body.rtl select {
+            background-position: left 12px center;
+            padding-right: 0.9rem;
+            padding-left: 2rem;
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 0.9rem;
         }
 
+        /* ============ ITEM CARDS (Experience, Education, etc.) ============ */
         .item-card {
-            background: var(--surface-light);
-            border-radius: 0.5rem;
+            background: rgba(30, 30, 42, 0.5);
+            border-radius: var(--radius-sm);
             padding: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             position: relative;
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s;
+            animation: cardSlideIn 0.35s ease-out;
+        }
+
+        .item-card:hover {
+            border-color: var(--border);
+        }
+
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .remove-btn {
             position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-size: 1.2rem;
+            top: 8px;
+            right: 8px;
+            width: 26px;
+            height: 26px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 50%;
+            color: var(--error);
+            font-size: 14px;
             cursor: pointer;
             display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--error);
         }
 
         .item-card.removable .remove-btn {
-            display: block;
+            display: flex;
         }
 
         body.rtl .remove-btn {
             right: auto;
-            left: 0.5rem;
+            left: 8px;
         }
 
+        /* ============ ADD BUTTON ============ */
         .add-btn {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.7rem;
             background: transparent;
-            border: 2px dashed var(--border);
-            border-radius: 0.5rem;
+            border: 1.5px dashed var(--border);
+            border-radius: var(--radius-xs);
             color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.2s;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.25s;
         }
 
         .add-btn:hover {
             border-color: var(--primary);
             color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        /* ============ SUBMIT BUTTON ============ */
+        .submit-section {
+            margin-top: 2rem;
         }
 
         .submit-btn {
             width: 100%;
             padding: 1rem;
-            margin-top: 2rem;
             background: var(--gradient);
             border: none;
-            border-radius: 0.5rem;
+            border-radius: var(--radius-sm);
             color: white;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-family: inherit;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.02em;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .submit-btn:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
         }
 
-        .loading {
+        .submit-btn:hover::before {
+            opacity: 1;
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn .btn-icon {
+            margin-right: 0.5rem;
+        }
+
+        body.rtl .submit-btn .btn-icon {
+            margin-right: 0;
+            margin-left: 0.5rem;
+        }
+
+        /* ============ LOADING OVERLAY ============ */
+        .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
-        .loading.show {
+        .loading-overlay.show {
             display: flex;
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid white;
-            border-top-color: transparent;
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         @keyframes spin {
@@ -249,217 +617,539 @@
             }
         }
 
-        @media (max-width: 600px) {
+        /* ============ TOAST NOTIFICATION ============ */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10000;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(34, 197, 94, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* ============ FOOTER ============ */
+        .footer {
+            text-align: center;
+            margin-top: 2.5rem;
+            padding-bottom: 1rem;
+        }
+
+        .heart-icon {
+            display: inline-block;
+            color: #dc2626;
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        /* ============ ANIMATIONS ============ */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ============ COLLAPSIBLE SECTIONS ============ */
+        .section-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-toggle .toggle-arrow {
+            font-size: 10px;
+            transition: transform 0.3s;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        body.rtl .section-toggle .toggle-arrow {
+            margin-left: 0;
+            margin-right: 4px;
+        }
+
+        .section-toggle.collapsed .toggle-arrow {
+            transform: rotate(-90deg);
+        }
+
+        body.rtl .section-toggle.collapsed .toggle-arrow {
+            transform: rotate(90deg);
+        }
+
+        .section-content {
+            overflow: hidden;
+            max-height: 2000px;
+            transition: max-height 0.5s ease, opacity 0.3s;
+            opacity: 1;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 700px) {
+            .template-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+
             .grid-2 {
                 grid-template-columns: 1fr;
             }
 
             body {
-                padding: 1rem;
+                font-size: 0.92rem;
             }
 
-            .footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin-top: 2rem;
-                padding-bottom: 2rem;
-                width: 100%;
+            .main-card {
+                padding: 1.25rem;
             }
 
-            .heart {
-                color: #b91c1c;
-                display: block;
-                animation: beat 1s infinite alternate;
+            h1 {
+                font-size: 2rem;
             }
 
-            @keyframes beat {
-                to {
-                    transform: scale(1.1);
-                }
+            .page-wrapper {
+                padding: 1rem 0.75rem 3rem;
+            }
+
+            .template-card {
+                padding: 0.75rem 0.5rem 0.5rem;
+            }
+
+            .template-swatch {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            .template-name {
+                font-size: 0.7rem;
+            }
+
+            .template-desc {
+                font-size: 0.6rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .template-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1 id="title">CV Generator</h1>
-            <p class="subtitle" id="subtitle">Create ATS-Friendly Resumes</p>
-        </div>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
 
-        <div class="lang-toggle">
-            <button class="lang-btn active" onclick="setLang('en')" id="btnEn">English</button>
-            <button class="lang-btn" onclick="setLang('ar')" id="btnAr">العربية</button>
-        </div>
-
-        <div class="card">
-            <input type="hidden" id="language" value="en">
-
-            <!-- Template Selector -->
-            <div class="section-title" data-en="Choose Template" data-ar="اختر القالب">Choose Template</div>
-            <div class="form-group">
-                <select id="template" class="template-select">
-                    <option value="classic" data-en="Classic - Black & White" data-ar="كلاسيكي - أبيض وأسود">Classic -
-                        Black & White</option>
-                    <option value="modern" data-en="Modern - Blue Theme" data-ar="عصري - أزرق">Modern - Blue Theme
-                    </option>
-                    <option value="minimal" data-en="Minimal - Green Theme" data-ar="بسيط - أخضر">Minimal - Green Theme
-                    </option>
-                    <option value="executive" data-en="Executive - Purple Header" data-ar="تنفيذي - رأس بنفسجي">
-                        Executive - Purple Header</option>
-                    <option value="compact" data-en="Compact - Orange Accent" data-ar="مضغوط - برتقالي">Compact - Orange
-                        Accent</option>
-                </select>
+    <div class="page-wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-icon">📄</div>
+                <h1 id="title">CV Generator</h1>
+                <p class="subtitle" id="subtitle">Create ATS-Friendly Professional Resumes</p>
             </div>
 
-            <div class="section-title" data-en="Personal Information" data-ar="المعلومات الشخصية">Personal Information
+            <!-- Language Toggle -->
+            <div class="lang-toggle">
+                <button class="lang-btn active" onclick="setLang('en')" id="btnEn">English</button>
+                <button class="lang-btn" onclick="setLang('ar')" id="btnAr">العربية</button>
             </div>
 
-            <div class="form-group">
-                <label data-en="Full Name" data-ar="الاسم الكامل">Full Name</label>
-                <input type="text" id="fullName" data-ph-en="John Doe" data-ph-ar="الاسم الكامل" placeholder="John Doe">
-            </div>
+            <!-- Main Form Card -->
+            <div class="main-card">
+                <input type="hidden" id="language" value="en">
 
-            <div class="grid-2">
+                <!-- ========== TEMPLATE SELECTOR ========== -->
+                <div class="section-header">
+                    <div class="section-icon">🎨</div>
+                    <div class="section-title" data-en="Choose Template" data-ar="اختر القالب">Choose Template</div>
+                    <div class="section-line"></div>
+                </div>
+
+                <div class="template-grid" id="templateGrid">
+                    <!-- Templates injected by JS -->
+                </div>
+                <input type="hidden" id="template" value="classic">
+
+                <!-- ========== PERSONAL INFO ========== -->
+                <div class="section-header">
+                    <div class="section-icon">👤</div>
+                    <div class="section-title" data-en="Personal Information" data-ar="المعلومات الشخصية">Personal
+                        Information</div>
+                    <div class="section-line"></div>
+                </div>
+
                 <div class="form-group">
-                    <label data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</label>
-                    <input type="text" id="jobTitle" data-ph-en="Software Engineer" data-ph-ar="مهندس برمجيات"
-                        placeholder="Software Engineer">
+                    <label data-en="Full Name" data-ar="الاسم الكامل">Full Name</label>
+                    <input type="text" id="fullName" data-ph-en="John Doe" data-ph-ar="الاسم الكامل"
+                        placeholder="John Doe">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</label>
+                        <input type="text" id="jobTitle" data-ph-en="Software Engineer" data-ph-ar="مهندس برمجيات"
+                            placeholder="Software Engineer">
+                    </div>
+                    <div class="form-group">
+                        <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
+                        <input type="email" id="email" placeholder="email@example.com">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label data-en="Phone" data-ar="الهاتف">Phone</label>
+                        <input type="tel" id="phone" data-ph-en="+1 234 567 890" data-ph-ar="+966 50 000 0000"
+                            placeholder="+1 234 567 890">
+                    </div>
+                    <div class="form-group">
+                        <label data-en="Location" data-ar="الموقع">Location</label>
+                        <input type="text" id="location" data-ph-en="New York, USA" data-ph-ar="الرياض، السعودية"
+                            placeholder="New York, USA">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label data-en="Email" data-ar="البريد">Email</label>
-                    <input type="email" id="email" placeholder="email@example.com">
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label data-en="Phone" data-ar="الهاتف">Phone</label>
-                    <input type="tel" id="phone" data-ph-en="+1 234 567 890" data-ph-ar="+966 50 000 0000"
-                        placeholder="+1 234 567 890">
+                    <label data-en="LinkedIn" data-ar="لينكدإن">LinkedIn</label>
+                    <input type="text" id="linkedin" placeholder="linkedin.com/in/username">
                 </div>
                 <div class="form-group">
-                    <label data-en="Location" data-ar="الموقع">Location</label>
-                    <input type="text" id="location" data-ph-en="New York, USA" data-ph-ar="الرياض، السعودية"
-                        placeholder="New York, USA">
+                    <label data-en="Professional Summary" data-ar="الملخص المهني">Professional Summary</label>
+                    <textarea id="summary" rows="3"
+                        data-ph-en="Brief overview of your career goals and qualifications..."
+                        data-ph-ar="نبذة مختصرة عن مسيرتك المهنية..."
+                        placeholder="Brief overview of your career goals and qualifications..."></textarea>
+                </div>
+
+                <!-- ========== EXPERIENCE ========== -->
+                <div class="section-header section-toggle" onclick="toggleSection(this)">
+                    <div class="section-icon">💼</div>
+                    <div class="section-title" data-en="Experience" data-ar="الخبرة العملية">Experience</div>
+                    <span class="toggle-arrow">▼</span>
+                    <div class="section-line"></div>
+                </div>
+                <div class="section-content">
+                    <div id="experiences"></div>
+                    <button class="add-btn" onclick="addExp()" data-en="+ Add Experience" data-ar="+ إضافة خبرة">+ Add
+                        Experience</button>
+                </div>
+
+                <!-- ========== EDUCATION ========== -->
+                <div class="section-header section-toggle" onclick="toggleSection(this)">
+                    <div class="section-icon">🎓</div>
+                    <div class="section-title" data-en="Education" data-ar="التعليم">Education</div>
+                    <span class="toggle-arrow">▼</span>
+                    <div class="section-line"></div>
+                </div>
+                <div class="section-content">
+                    <div id="education"></div>
+                    <button class="add-btn" onclick="addEdu()" data-en="+ Add Education" data-ar="+ إضافة تعليم">+ Add
+                        Education</button>
+                </div>
+
+                <!-- ========== SKILLS ========== -->
+                <div class="section-header">
+                    <div class="section-icon">⚡</div>
+                    <div class="section-title" data-en="Skills" data-ar="المهارات">Skills</div>
+                    <div class="section-line"></div>
+                </div>
+                <div class="form-group">
+                    <textarea id="skills" rows="2" data-ph-en="Python, JavaScript, React, Project Management..."
+                        data-ph-ar="Python, JavaScript, React, إدارة المشاريع..."
+                        placeholder="Python, JavaScript, React, Project Management..."></textarea>
+                </div>
+
+                <!-- ========== CERTIFICATIONS ========== -->
+                <div class="section-header section-toggle" onclick="toggleSection(this)">
+                    <div class="section-icon">🏆</div>
+                    <div class="section-title" data-en="Certifications" data-ar="الشهادات">Certifications</div>
+                    <span class="toggle-arrow">▼</span>
+                    <div class="section-line"></div>
+                </div>
+                <div class="section-content">
+                    <div id="certifications"></div>
+                    <button class="add-btn" onclick="addCert()" data-en="+ Add Certification" data-ar="+ إضافة شهادة">+
+                        Add Certification</button>
+                </div>
+
+                <!-- ========== LANGUAGES ========== -->
+                <div class="section-header section-toggle" onclick="toggleSection(this)">
+                    <div class="section-icon">🌍</div>
+                    <div class="section-title" data-en="Languages" data-ar="اللغات">Languages</div>
+                    <span class="toggle-arrow">▼</span>
+                    <div class="section-line"></div>
+                </div>
+                <div class="section-content">
+                    <div id="languages"></div>
+                    <button class="add-btn" onclick="addLang()" data-en="+ Add Language" data-ar="+ إضافة لغة">+ Add
+                        Language</button>
+                </div>
+
+                <!-- ========== PROJECTS ========== -->
+                <div class="section-header section-toggle" onclick="toggleSection(this)">
+                    <div class="section-icon">🚀</div>
+                    <div class="section-title" data-en="Projects" data-ar="المشاريع">Projects</div>
+                    <span class="toggle-arrow">▼</span>
+                    <div class="section-line"></div>
+                </div>
+                <div class="section-content">
+                    <div id="projects"></div>
+                    <button class="add-btn" onclick="addProject()" data-en="+ Add Project" data-ar="+ إضافة مشروع">+ Add
+                        Project</button>
+                </div>
+
+                <!-- ========== GENERATE BUTTON ========== -->
+                <div class="submit-section">
+                    <button class="submit-btn" onclick="generate()" id="generateBtn" data-en="📥  Generate CV"
+                        data-ar="📥  إنشاء السيرة الذاتية">
+                        <span class="btn-icon">📥</span> Generate CV
+                    </button>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label data-en="LinkedIn" data-ar="لينكدإن">LinkedIn</label>
-                <input type="text" id="linkedin" placeholder="linkedin.com/in/username">
+            <!-- Footer -->
+            <div class="footer">
+                <span class="heart-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="#dc2626">
+                        <path
+                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    </svg>
+                </span>
             </div>
-
-            <div class="form-group">
-                <label data-en="Professional Summary" data-ar="الملخص المهني">Professional Summary</label>
-                <textarea id="summary" rows="3" data-ph-en="Brief overview of your career..."
-                    data-ph-ar="نبذة مختصرة عن مسيرتك المهنية..."
-                    placeholder="Brief overview of your career..."></textarea>
-            </div>
-
-            <div class="section-title" data-en="Experience" data-ar="الخبرة العملية">Experience</div>
-            <div id="experiences"></div>
-            <button class="add-btn" onclick="addExp()" data-en="+ Add Experience" data-ar="+ إضافة خبرة">+ Add
-                Experience</button>
-
-            <div class="section-title" data-en="Education" data-ar="التعليم">Education</div>
-            <div id="education"></div>
-            <button class="add-btn" onclick="addEdu()" data-en="+ Add Education" data-ar="+ إضافة تعليم">+ Add
-                Education</button>
-
-            <div class="section-title" data-en="Skills" data-ar="المهارات">Skills</div>
-            <div class="form-group">
-                <textarea id="skills" rows="2" data-ph-en="Python, JavaScript, React..."
-                    data-ph-ar="Python, JavaScript, React..." placeholder="Python, JavaScript, React..."></textarea>
-            </div>
-
-            <button class="submit-btn" onclick="generate()" data-en="Generate CV"
-                data-ar="إنشاء السيرة الذاتية">Generate CV</button>
-        </div>
-
-        <div class="footer">
-            <svg class="heart" viewBox="0 0 24 24" width="32" height="32" fill="#b91c1c">
-                <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-            </svg>
         </div>
     </div>
 
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loader"></div>
+        <div class="loading-text" id="loadingText">Generating your CV...</div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-icon">✓</div>
+        <span id="toastText">CV downloaded successfully!</span>
     </div>
 
     <script>
-        let expCount = 0, eduCount = 0, lang = 'en';
+        let expCount = 0, eduCount = 0, certCount = 0, langCount = 0, projCount = 0;
+        let currentLang = 'en';
+        let selectedTemplate = 'classic';
+
+        // Template data
+        const templateData = {
+            classic: { en: 'Classic', ar: 'كلاسيكي', desc_en: 'Black & White', desc_ar: 'أبيض وأسود', color: '#000000', icon: '📋' },
+            modern: { en: 'Modern', ar: 'عصري', desc_en: 'Blue Theme', desc_ar: 'أزرق', color: '#2563eb', icon: '🔷' },
+            minimal: { en: 'Minimal', ar: 'بسيط', desc_en: 'Green Theme', desc_ar: 'أخضر', color: '#059669', icon: '🍃' },
+            executive: { en: 'Executive', ar: 'تنفيذي', desc_en: 'Purple Header', desc_ar: 'رأس بنفسجي', color: '#7c3aed', icon: '👔' },
+            compact: { en: 'Compact', ar: 'مضغوط', desc_en: 'Orange Accent', desc_ar: 'برتقالي', color: '#ea580c', icon: '📐' },
+            professional: { en: 'Professional', ar: 'احترافي', desc_en: 'Navy Sidebar', desc_ar: 'شريط بحري', color: '#1e3a5f', icon: '🏢' },
+            creative: { en: 'Creative', ar: 'إبداعي', desc_en: 'Teal & Coral', desc_ar: 'أزرق مخضر', color: '#0d9488', icon: '🎨' },
+            diamond: { en: 'Diamond', ar: 'الماسي', desc_en: 'Gold Elegant', desc_ar: 'ذهبي أنيق', color: '#d4a843', icon: '💎' },
+            tech: { en: 'Tech', ar: 'تقني', desc_en: 'Cyan Digital', desc_ar: 'رقمي سماوي', color: '#06b6d4', icon: '💻' },
+        };
 
         // Labels for dynamic fields
         const labels = {
             en: {
                 title: 'Title', company: 'Company', start: 'Start', end: 'End', description: 'Description',
-                degree: 'Degree', school: 'School', field: 'Field', year: 'Year',
-                phTitle: 'Developer', phCompany: 'Company', phStart: '2020', phEnd: 'Present', phDesc: 'Key responsibilities...',
-                phDegree: 'BSc', phSchool: 'University', phField: 'Computer Science'
+                degree: 'Degree', school: 'School / University', field: 'Field of Study', year: 'Year',
+                certName: 'Certification Name', certIssuer: 'Issuing Organization', certYear: 'Year',
+                langName: 'Language', langLevel: 'Proficiency Level',
+                projName: 'Project Name', projDesc: 'Description', projLink: 'Link (optional)',
+                phTitle: 'Senior Developer', phCompany: 'Google Inc.', phStart: '2020', phEnd: 'Present', phDesc: 'Led development of...',
+                phDegree: 'BSc Computer Science', phSchool: 'MIT', phField: 'Computer Science',
+                phCertName: 'AWS Certified', phCertIssuer: 'Amazon', phCertYear: '2023',
+                phLangName: 'English', phLangLevel: 'Native',
+                phProjName: 'E-Commerce Platform', phProjDesc: 'Built a full-stack...', phProjLink: 'https://github.com/...'
             },
             ar: {
                 title: 'المسمى الوظيفي', company: 'الشركة', start: 'من', end: 'إلى', description: 'الوصف',
-                degree: 'الدرجة العلمية', school: 'الجامعة', field: 'التخصص', year: 'السنة',
-                phTitle: 'مطور', phCompany: 'شركة', phStart: '2020', phEnd: 'الآن', phDesc: 'وصف المهام...',
-                phDegree: 'بكالوريوس', phSchool: 'الجامعة', phField: 'علوم الحاسب'
+                degree: 'الدرجة العلمية', school: 'الجامعة / المدرسة', field: 'التخصص', year: 'السنة',
+                certName: 'اسم الشهادة', certIssuer: 'الجهة المانحة', certYear: 'السنة',
+                langName: 'اللغة', langLevel: 'مستوى الإتقان',
+                projName: 'اسم المشروع', projDesc: 'الوصف', projLink: 'الرابط (اختياري)',
+                phTitle: 'مطور أول', phCompany: 'شركة التقنية', phStart: '2020', phEnd: 'الآن', phDesc: 'قيادة تطوير...',
+                phDegree: 'بكالوريوس', phSchool: 'جامعة الملك سعود', phField: 'علوم الحاسب',
+                phCertName: 'شهادة AWS', phCertIssuer: 'أمازون', phCertYear: '2023',
+                phLangName: 'العربية', phLangLevel: 'اللغة الأم',
+                phProjName: 'منصة تجارة إلكترونية', phProjDesc: 'بناء منصة متكاملة...', phProjLink: 'https://github.com/...'
             }
         };
 
+        // ============ TEMPLATE SELECTOR SETUP ============
+        function buildTemplateGrid() {
+            const grid = document.getElementById('templateGrid');
+            grid.innerHTML = '';
+            for (const [key, tmpl] of Object.entries(templateData)) {
+                const isSelected = key === selectedTemplate;
+                const name = currentLang === 'ar' ? tmpl.ar : tmpl.en;
+                const desc = currentLang === 'ar' ? tmpl.desc_ar : tmpl.desc_en;
+                grid.innerHTML += `
+                    <div class="template-card ${isSelected ? 'selected' : ''}" 
+                         style="--card-color: ${tmpl.color};" 
+                         onclick="selectTemplate('${key}')" 
+                         data-template="${key}">
+                        <div class="check-mark">✓</div>
+                        <div class="template-swatch" style="background: ${tmpl.color};">${tmpl.icon}</div>
+                        <div class="template-name">${name}</div>
+                        <div class="template-desc">${desc}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectTemplate(key) {
+            selectedTemplate = key;
+            document.getElementById('template').value = key;
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.template === key);
+            });
+        }
+
+        // ============ LANGUAGE ============
         function setLang(l) {
-            lang = l;
+            currentLang = l;
             document.getElementById('language').value = l;
             document.body.classList.toggle('rtl', l === 'ar');
             document.getElementById('btnEn').classList.toggle('active', l === 'en');
             document.getElementById('btnAr').classList.toggle('active', l === 'ar');
             document.getElementById('title').textContent = l === 'ar' ? 'منشئ السيرة الذاتية' : 'CV Generator';
-            document.getElementById('subtitle').textContent = l === 'ar' ? 'أنشئ سيرة ذاتية احترافية' : 'Create ATS-Friendly Resumes';
+            document.getElementById('subtitle').textContent = l === 'ar' ? 'أنشئ سيرة ذاتية احترافية متوافقة مع ATS' : 'Create ATS-Friendly Professional Resumes';
+            document.getElementById('loadingText').textContent = l === 'ar' ? 'جاري إنشاء السيرة الذاتية...' : 'Generating your CV...';
 
             // Update static labels
             document.querySelectorAll('[data-' + l + ']').forEach(el => {
-                el.textContent = el.getAttribute('data-' + l);
+                if (el.tagName === 'BUTTON' && el.querySelector('.btn-icon')) {
+                    el.innerHTML = '<span class="btn-icon">📥</span> ' + el.getAttribute('data-' + l);
+                } else {
+                    el.textContent = el.getAttribute('data-' + l);
+                }
             });
             document.querySelectorAll('[data-ph-' + l + ']').forEach(el => {
                 el.placeholder = el.getAttribute('data-ph-' + l);
             });
 
-            // Update dynamic experience/education labels
+            buildTemplateGrid();
             updateDynamicLabels();
         }
 
         function updateDynamicLabels() {
-            const lb = labels[lang];
-
-            // Experience labels
+            const lb = labels[currentLang];
+            // Experience 
             document.querySelectorAll('.item-card[id^="exp"] label[data-field]').forEach(lbl => {
-                const field = lbl.getAttribute('data-field');
-                lbl.textContent = lb[field] || field;
+                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
             });
             document.querySelectorAll('.item-card[id^="exp"] input[data-ph-field], .item-card[id^="exp"] textarea[data-ph-field]').forEach(inp => {
-                const field = inp.getAttribute('data-ph-field');
-                inp.placeholder = lb[field] || '';
+                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
             });
-
-            // Education labels
+            // Education
             document.querySelectorAll('.item-card[id^="edu"] label[data-field]').forEach(lbl => {
-                const field = lbl.getAttribute('data-field');
-                lbl.textContent = lb[field] || field;
+                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
             });
             document.querySelectorAll('.item-card[id^="edu"] input[data-ph-field]').forEach(inp => {
-                const field = inp.getAttribute('data-ph-field');
-                inp.placeholder = lb[field] || '';
+                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
+            });
+            // Certifications
+            document.querySelectorAll('.item-card[id^="cert"] label[data-field]').forEach(lbl => {
+                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
+            });
+            document.querySelectorAll('.item-card[id^="cert"] input[data-ph-field]').forEach(inp => {
+                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
+            });
+            // Languages
+            document.querySelectorAll('.item-card[id^="lng"] label[data-field]').forEach(lbl => {
+                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
+            });
+            document.querySelectorAll('.item-card[id^="lng"] input[data-ph-field]').forEach(inp => {
+                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
+            });
+            // Projects
+            document.querySelectorAll('.item-card[id^="proj"] label[data-field]').forEach(lbl => {
+                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
+            });
+            document.querySelectorAll('.item-card[id^="proj"] input[data-ph-field], .item-card[id^="proj"] textarea[data-ph-field]').forEach(inp => {
+                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
             });
         }
 
+        // ============ SECTION TOGGLE ============
+        function toggleSection(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            if (content) content.classList.toggle('collapsed');
+        }
+
+        // ============ ADD EXPERIENCE ============
         function addExp(isFirst = false) {
             expCount++;
-            const lb = labels[lang];
+            const lb = labels[currentLang];
             const removableClass = isFirst ? '' : 'removable';
-
             document.getElementById('experiences').insertAdjacentHTML('beforeend', `
                 <div class="item-card ${removableClass}" id="exp${expCount}">
                     <button class="remove-btn" onclick="document.getElementById('exp${expCount}').remove()">×</button>
@@ -491,11 +1181,11 @@
             `);
         }
 
+        // ============ ADD EDUCATION ============
         function addEdu(isFirst = false) {
             eduCount++;
-            const lb = labels[lang];
+            const lb = labels[currentLang];
             const removableClass = isFirst ? '' : 'removable';
-
             document.getElementById('education').insertAdjacentHTML('beforeend', `
                 <div class="item-card ${removableClass}" id="edu${eduCount}">
                     <button class="remove-btn" onclick="document.getElementById('edu${eduCount}').remove()">×</button>
@@ -523,6 +1213,89 @@
             `);
         }
 
+        // ============ ADD CERTIFICATION ============
+        function addCert(isFirst = false) {
+            certCount++;
+            const lb = labels[currentLang];
+            const removableClass = isFirst ? '' : 'removable';
+            document.getElementById('certifications').insertAdjacentHTML('beforeend', `
+                <div class="item-card ${removableClass}" id="cert${certCount}">
+                    <button class="remove-btn" onclick="document.getElementById('cert${certCount}').remove()">×</button>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="certName">${lb.certName}</label>
+                            <input type="text" class="cert-name" data-ph-field="phCertName" placeholder="${lb.phCertName}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="certIssuer">${lb.certIssuer}</label>
+                            <input type="text" class="cert-issuer" data-ph-field="phCertIssuer" placeholder="${lb.phCertIssuer}">
+                        </div>
+                    </div>
+                    <div class="form-group" style="max-width:50%">
+                        <label data-field="certYear">${lb.certYear}</label>
+                        <input type="text" class="cert-year" data-ph-field="phCertYear" placeholder="${lb.phCertYear}">
+                    </div>
+                </div>
+            `);
+        }
+
+        // ============ ADD LANGUAGE ============
+        function addLang(isFirst = false) {
+            langCount++;
+            const lb = labels[currentLang];
+            const removableClass = isFirst ? '' : 'removable';
+            document.getElementById('languages').insertAdjacentHTML('beforeend', `
+                <div class="item-card ${removableClass}" id="lng${langCount}">
+                    <button class="remove-btn" onclick="document.getElementById('lng${langCount}').remove()">×</button>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="langName">${lb.langName}</label>
+                            <input type="text" class="lng-name" data-ph-field="phLangName" placeholder="${lb.phLangName}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="langLevel">${lb.langLevel}</label>
+                            <input type="text" class="lng-level" data-ph-field="phLangLevel" placeholder="${lb.phLangLevel}">
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        // ============ ADD PROJECT ============
+        function addProject(isFirst = false) {
+            projCount++;
+            const lb = labels[currentLang];
+            const removableClass = isFirst ? '' : 'removable';
+            document.getElementById('projects').insertAdjacentHTML('beforeend', `
+                <div class="item-card ${removableClass}" id="proj${projCount}">
+                    <button class="remove-btn" onclick="document.getElementById('proj${projCount}').remove()">×</button>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label data-field="projName">${lb.projName}</label>
+                            <input type="text" class="proj-name" data-ph-field="phProjName" placeholder="${lb.phProjName}">
+                        </div>
+                        <div class="form-group">
+                            <label data-field="projLink">${lb.projLink}</label>
+                            <input type="text" class="proj-link" data-ph-field="phProjLink" placeholder="${lb.phProjLink}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label data-field="projDesc">${lb.projDesc}</label>
+                        <textarea class="proj-desc" rows="2" data-ph-field="phProjDesc" placeholder="${lb.phProjDesc}"></textarea>
+                    </div>
+                </div>
+            `);
+        }
+
+        // ============ TOAST ============
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        // ============ GENERATE ============
         async function generate() {
             document.getElementById('loading').classList.add('show');
             try {
@@ -538,9 +1311,13 @@
                     summary: document.getElementById('summary').value,
                     skills: document.getElementById('skills').value,
                     experiences: [],
-                    education: []
+                    education: [],
+                    certifications: [],
+                    languages: [],
+                    projects: []
                 };
 
+                // Collect experiences
                 document.querySelectorAll('.item-card[id^="exp"]').forEach(item => {
                     data.experiences.push({
                         title: item.querySelector('.exp-title').value,
@@ -551,12 +1328,39 @@
                     });
                 });
 
+                // Collect education
                 document.querySelectorAll('.item-card[id^="edu"]').forEach(item => {
                     data.education.push({
                         degree: item.querySelector('.edu-degree').value,
                         school: item.querySelector('.edu-school').value,
                         field: item.querySelector('.edu-field').value,
                         year: item.querySelector('.edu-year').value
+                    });
+                });
+
+                // Collect certifications
+                document.querySelectorAll('.item-card[id^="cert"]').forEach(item => {
+                    data.certifications.push({
+                        name: item.querySelector('.cert-name').value,
+                        issuer: item.querySelector('.cert-issuer').value,
+                        year: item.querySelector('.cert-year').value
+                    });
+                });
+
+                // Collect languages
+                document.querySelectorAll('.item-card[id^="lng"]').forEach(item => {
+                    data.languages.push({
+                        language: item.querySelector('.lng-name').value,
+                        level: item.querySelector('.lng-level').value
+                    });
+                });
+
+                // Collect projects
+                document.querySelectorAll('.item-card[id^="proj"]').forEach(item => {
+                    data.projects.push({
+                        name: item.querySelector('.proj-name').value,
+                        description: item.querySelector('.proj-desc').value,
+                        link: item.querySelector('.proj-link').value
                     });
                 });
 
@@ -573,9 +1377,12 @@
                     a.href = url;
                     a.download = `${data.full_name.replace(/\s+/g, '_') || 'cv'}.pdf`;
                     a.click();
+                    URL.revokeObjectURL(url);
+                    const msg = currentLang === 'ar' ? 'تم تحميل السيرة الذاتية بنجاح! ✨' : 'CV downloaded successfully! ✨';
+                    showToast(msg);
                 } else {
                     const err = await res.json();
-                    alert('Error: ' + (err.error || 'Unknown'));
+                    alert('Error: ' + (err.error || 'Unknown error'));
                 }
             } catch (e) {
                 alert('Error: ' + e);
@@ -584,7 +1391,8 @@
             }
         }
 
-        // Initialize with first items (no remove button)
+        // ============ INIT ============
+        buildTemplateGrid();
         addExp(true);
         addEdu(true);
     </script>

@@ -1,6 +1,7 @@
 """
-CV Generator - Multi-Template Version
+CV Generator - Multi-Template Version (v2.0)
 Uses ReportLab directly for PDF generation with proper Arabic support
+9 ATS-Friendly Templates with Certifications, Languages, and Projects
 """
 
 from flask import Flask, render_template, request, send_file
@@ -28,11 +29,10 @@ limiter = Limiter(
 )
 
 # ============ FONT SETUP ============
-# ============ FONT SETUP ============
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_DIR = os.path.join(BASE_DIR, 'fonts')
 
-# 1. Prefer System Arial (Windows) - The user prefers this look
+# 1. Prefer System Arial (Windows)
 SYSTEM_ARIAL = r"C:\Windows\Fonts\arial.ttf"
 SYSTEM_ARIAL_BOLD = r"C:\Windows\Fonts\arialbd.ttf"
 
@@ -41,8 +41,6 @@ if os.path.exists(SYSTEM_ARIAL):
     FONT_PATH_BOLD = SYSTEM_ARIAL_BOLD
     print("[OK] Using System Arial Font (Windows default)")
 else:
-    # 2. Fallback for Linux/Server (Arimo or Tajawal or Cairo)
-    # Priority: Arimo (Arial clone) -> Tajawal -> Cairo -> Amiri
     options = [
         ('Arimo-Regular.ttf', 'Arimo-Bold.ttf'),
         ('Tajawal-Regular.ttf', 'Tajawal-Bold.ttf'),
@@ -62,7 +60,6 @@ else:
             
     if not FONT_PATH:
         print("[WARN] No suitable fonts found! Arabic may not render correctly.")
-        # Final desperate fallback
         FONT_PATH = os.path.join(FONT_DIR, 'Cairo-Regular.ttf')
         FONT_PATH_BOLD = os.path.join(FONT_DIR, 'Cairo-Bold.ttf')
 
@@ -74,53 +71,119 @@ except Exception as e:
     print(f"[ERROR] Font registration failed: {e}")
 
 
-# Template configurations - each has unique visual style
+# ============ TEMPLATE CONFIGURATIONS ============
 TEMPLATES = {
     'classic': {
         'name_en': 'Classic',
         'name_ar': 'كلاسيكي',
+        'desc_en': 'Black & White',
+        'desc_ar': 'أبيض وأسود',
         'primary': HexColor('#000000'),
         'secondary': HexColor('#333333'),
         'accent': HexColor('#f0f0f0'),
         'line_color': HexColor('#000000'),
         'layout': 'standard',
+        'color_preview': '#000000',
     },
     'modern': {
         'name_en': 'Modern',
         'name_ar': 'عصري',
+        'desc_en': 'Blue Theme',
+        'desc_ar': 'أزرق',
         'primary': HexColor('#2563eb'),
         'secondary': HexColor('#1e40af'),
         'accent': HexColor('#dbeafe'),
         'line_color': HexColor('#2563eb'),
         'layout': 'standard',
+        'color_preview': '#2563eb',
     },
     'minimal': {
         'name_en': 'Minimal',
         'name_ar': 'بسيط',
+        'desc_en': 'Green Theme',
+        'desc_ar': 'أخضر',
         'primary': HexColor('#059669'),
         'secondary': HexColor('#047857'),
         'accent': HexColor('#d1fae5'),
         'line_color': HexColor('#059669'),
         'layout': 'standard',
+        'color_preview': '#059669',
     },
     'executive': {
         'name_en': 'Executive',
         'name_ar': 'تنفيذي',
+        'desc_en': 'Purple Header',
+        'desc_ar': 'رأس بنفسجي',
         'primary': HexColor('#7c3aed'),
         'secondary': HexColor('#5b21b6'),
         'accent': HexColor('#ede9fe'),
         'line_color': HexColor('#7c3aed'),
-        'layout': 'executive',  # Bold header box design
+        'layout': 'executive',
+        'color_preview': '#7c3aed',
     },
     'compact': {
         'name_en': 'Compact',
         'name_ar': 'مضغوط',
+        'desc_en': 'Orange Accent',
+        'desc_ar': 'برتقالي',
         'primary': HexColor('#ea580c'),
         'secondary': HexColor('#c2410c'),
         'accent': HexColor('#ffedd5'),
         'line_color': HexColor('#ea580c'),
-        'layout': 'compact',  # Timeline-style with dates on side
-    }
+        'layout': 'compact',
+        'color_preview': '#ea580c',
+    },
+    'professional': {
+        'name_en': 'Professional',
+        'name_ar': 'احترافي',
+        'desc_en': 'Navy Sidebar',
+        'desc_ar': 'شريط بحري',
+        'primary': HexColor('#1e3a5f'),
+        'secondary': HexColor('#2c5282'),
+        'accent': HexColor('#e2e8f0'),
+        'line_color': HexColor('#1e3a5f'),
+        'layout': 'professional',
+        'color_preview': '#1e3a5f',
+    },
+    'creative': {
+        'name_en': 'Creative',
+        'name_ar': 'إبداعي',
+        'desc_en': 'Teal & Coral',
+        'desc_ar': 'أزرق مخضر',
+        'primary': HexColor('#0d9488'),
+        'secondary': HexColor('#115e59'),
+        'accent': HexColor('#ccfbf1'),
+        'accent2': HexColor('#f97316'),
+        'line_color': HexColor('#0d9488'),
+        'layout': 'creative',
+        'color_preview': '#0d9488',
+    },
+    'diamond': {
+        'name_en': 'Diamond',
+        'name_ar': 'الماسي',
+        'desc_en': 'Gold Elegant',
+        'desc_ar': 'ذهبي أنيق',
+        'primary': HexColor('#374151'),
+        'secondary': HexColor('#4b5563'),
+        'accent': HexColor('#f9fafb'),
+        'accent2': HexColor('#d4a843'),
+        'line_color': HexColor('#d4a843'),
+        'layout': 'diamond',
+        'color_preview': '#d4a843',
+    },
+    'tech': {
+        'name_en': 'Tech',
+        'name_ar': 'تقني',
+        'desc_en': 'Cyan Digital',
+        'desc_ar': 'رقمي سماوي',
+        'primary': HexColor('#475569'),
+        'secondary': HexColor('#334155'),
+        'accent': HexColor('#f1f5f9'),
+        'accent2': HexColor('#06b6d4'),
+        'line_color': HexColor('#06b6d4'),
+        'layout': 'tech',
+        'color_preview': '#06b6d4',
+    },
 }
 
 
@@ -141,7 +204,8 @@ def draw_cv_pdf(data, language='en', template='classic'):
     
     page_width, page_height = A4
     margin = 20 * mm
-    
+    bottom_margin = 20 * mm
+
     c = canvas.Canvas(buffer, pagesize=A4)
     
     is_rtl = language == 'ar'
@@ -155,12 +219,64 @@ def draw_cv_pdf(data, language='en', template='classic'):
     y = page_height - margin
     layout = theme.get('layout', 'standard')
     
-    # ========== HEADER - Different styles per layout ==========
+    # ========== PAGE BREAK HELPER ==========
+    def check_page_break(needed=15*mm):
+        nonlocal y
+        if y < bottom_margin + needed:
+            c.showPage()
+            y = page_height - margin
+            return True
+        return False
+
+    # ========== ICON DRAWING FUNCTIONS ==========
+    def draw_email_icon(x, y_pos, size=3*mm):
+        c.saveState()
+        c.setStrokeColorRGB(0.3, 0.3, 0.3)
+        c.setFillColorRGB(0.3, 0.3, 0.3)
+        c.setLineWidth(0.5)
+        c.rect(x, y_pos - size*0.6, size*1.5, size*0.8, stroke=1, fill=0)
+        c.line(x, y_pos + size*0.2, x + size*0.75, y_pos - size*0.3)
+        c.line(x + size*1.5, y_pos + size*0.2, x + size*0.75, y_pos - size*0.3)
+        c.restoreState()
+        return size*1.5 + 2*mm
+    
+    def draw_phone_icon(x, y_pos, size=3*mm):
+        c.saveState()
+        c.setStrokeColorRGB(0.3, 0.3, 0.3)
+        c.setFillColorRGB(0.3, 0.3, 0.3)
+        c.setLineWidth(0.5)
+        c.roundRect(x, y_pos - size*0.5, size*0.6, size, size*0.1, stroke=1, fill=0)
+        c.rect(x + size*0.1, y_pos - size*0.3, size*0.4, size*0.6, stroke=0, fill=1)
+        c.restoreState()
+        return size*0.6 + 2*mm
+    
+    def draw_location_icon(x, y_pos, size=3*mm):
+        c.saveState()
+        c.setStrokeColorRGB(0.3, 0.3, 0.3)
+        c.setFillColorRGB(0.3, 0.3, 0.3)
+        c.setLineWidth(0.5)
+        c.line(x + size*0.3, y_pos - size*0.6, x + size*0.5, y_pos - size)
+        c.line(x + size*0.7, y_pos - size*0.6, x + size*0.5, y_pos - size)
+        c.circle(x + size*0.5, y_pos - size*0.3, size*0.35, stroke=1, fill=0)
+        c.restoreState()
+        return size + 2*mm
+    
+    def draw_linkedin_icon(x, y_pos, size=3*mm):
+        c.saveState()
+        c.setStrokeColorRGB(0.3, 0.3, 0.3)
+        c.setLineWidth(0.5)
+        c.ellipse(x, y_pos - size*0.4, x + size*0.8, y_pos + size*0.2, stroke=1, fill=0)
+        c.ellipse(x + size*0.4, y_pos - size*0.4, x + size*1.2, y_pos + size*0.2, stroke=1, fill=0)
+        c.restoreState()
+        return size*1.2 + 2*mm
+
+
+    # ========== HEADER - Style per layout ==========
     if layout == 'executive':
-        # Executive: Full-width colored header box with large centered name
+        # Full-width colored header box
         c.setFillColor(theme['primary'])
         c.rect(0, page_height - 45*mm, page_width, 45*mm, fill=True, stroke=False)
-        c.setFillColorRGB(1, 1, 1)  # White text
+        c.setFillColorRGB(1, 1, 1)
         c.setFont('MainFontBold', 28)
         name = t(data.get('full_name', ''))
         name_width = c.stringWidth(name, 'MainFontBold', 28)
@@ -176,7 +292,7 @@ def draw_cv_pdf(data, language='en', template='classic'):
         c.setFillColorRGB(0, 0, 0)
         
     elif layout == 'compact':
-        # Compact: Left accent bar with name
+        # Left accent bar
         c.setFillColor(theme['primary'])
         c.rect(margin - 5*mm, y - 15*mm, 3*mm, 20*mm, fill=True, stroke=False)
         c.setFillColor(theme['primary'])
@@ -198,6 +314,115 @@ def draw_cv_pdf(data, language='en', template='classic'):
                 c.drawString(margin, y, job_title)
         y -= 8 * mm
         c.setFillColorRGB(0, 0, 0)
+
+    elif layout == 'professional':
+        # Navy left stripe + right-aligned contact
+        c.setFillColor(theme['primary'])
+        c.rect(0, page_height - 42*mm, 8*mm, 42*mm, fill=True, stroke=False)
+        # Top bar
+        c.setFillColor(theme['accent'])
+        c.rect(8*mm, page_height - 42*mm, page_width - 8*mm, 42*mm, fill=True, stroke=False)
+        
+        c.setFillColor(theme['primary'])
+        c.setFont('MainFontBold', 24)
+        name = t(data.get('full_name', ''))
+        if is_rtl:
+            c.drawRightString(page_width - margin, y - 2*mm, name)
+        else:
+            c.drawString(margin + 2*mm, y - 2*mm, name)
+        y -= 12 * mm
+        
+        job_title = t(data.get('job_title', ''))
+        if job_title:
+            c.setFont('MainFont', 13)
+            c.setFillColor(theme['secondary'])
+            if is_rtl:
+                c.drawRightString(page_width - margin, y, job_title)
+            else:
+                c.drawString(margin + 2*mm, y, job_title)
+        y = page_height - 47*mm
+        c.setFillColorRGB(0, 0, 0)
+
+    elif layout == 'creative':
+        # Bold gradient-like header with accent stripe
+        c.setFillColor(theme['primary'])
+        c.rect(0, page_height - 40*mm, page_width, 40*mm, fill=True, stroke=False)
+        # Coral accent bar at bottom of header
+        accent2 = theme.get('accent2', theme['primary'])
+        c.setFillColor(accent2)
+        c.rect(0, page_height - 43*mm, page_width, 3*mm, fill=True, stroke=False)
+        
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont('MainFontBold', 26)
+        name = t(data.get('full_name', ''))
+        name_width = c.stringWidth(name, 'MainFontBold', 26)
+        c.drawString((page_width - name_width) / 2, y - 3*mm, name)
+        y -= 13 * mm
+        
+        job_title = t(data.get('job_title', ''))
+        if job_title:
+            c.setFont('MainFont', 13)
+            c.setFillColorRGB(0.9, 0.9, 0.9)
+            title_width = c.stringWidth(job_title, 'MainFont', 13)
+            c.drawString((page_width - title_width) / 2, y, job_title)
+        y = page_height - 48*mm
+        c.setFillColorRGB(0, 0, 0)
+
+    elif layout == 'diamond':
+        # Elegant charcoal header with gold line
+        c.setFillColor(theme['primary'])
+        c.rect(0, page_height - 38*mm, page_width, 38*mm, fill=True, stroke=False)
+        # Gold line at bottom
+        gold = theme.get('accent2', theme['line_color'])
+        c.setStrokeColor(gold)
+        c.setLineWidth(2)
+        c.line(margin, page_height - 39*mm, page_width - margin, page_height - 39*mm)
+        
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont('MainFontBold', 26)
+        name = t(data.get('full_name', ''))
+        name_width = c.stringWidth(name, 'MainFontBold', 26)
+        c.drawString((page_width - name_width) / 2, y - 2*mm, name)
+        y -= 12 * mm
+        
+        job_title = t(data.get('job_title', ''))
+        if job_title:
+            c.setFont('MainFont', 12)
+            c.setFillColor(gold)
+            title_width = c.stringWidth(job_title, 'MainFont', 12)
+            c.drawString((page_width - title_width) / 2, y, job_title)
+        y = page_height - 44*mm
+        c.setFillColorRGB(0, 0, 0)
+
+    elif layout == 'tech':
+        # Slate header with cyan accent line
+        c.setFillColor(theme['primary'])
+        c.rect(0, page_height - 36*mm, page_width, 36*mm, fill=True, stroke=False)
+        # Cyan line
+        cyan = theme.get('accent2', theme['line_color'])
+        c.setStrokeColor(cyan)
+        c.setLineWidth(3)
+        c.line(0, page_height - 37*mm, page_width, page_height - 37*mm)
+        
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont('MainFontBold', 22)
+        name = t(data.get('full_name', ''))
+        # Code-bracket style: < Name />
+        display_name = name
+        if not is_rtl:
+            display_name = f"< {name} />"
+        name_width = c.stringWidth(display_name, 'MainFontBold', 22)
+        c.drawString((page_width - name_width) / 2, y - 2*mm, display_name)
+        y -= 11 * mm
+        
+        job_title = t(data.get('job_title', ''))
+        if job_title:
+            c.setFont('MainFont', 11)
+            c.setFillColor(cyan)
+            title_width = c.stringWidth(job_title, 'MainFont', 11)
+            c.drawString((page_width - title_width) / 2, y, job_title)
+        y = page_height - 42*mm
+        c.setFillColorRGB(0, 0, 0)
         
     else:
         # Standard layout (classic, modern, minimal)
@@ -208,7 +433,6 @@ def draw_cv_pdf(data, language='en', template='classic'):
         else:
             c.setFillColor(theme['primary'])
         
-        # Name
         c.setFont('MainFontBold', 22)
         name = t(data.get('full_name', ''))
         if is_rtl:
@@ -217,7 +441,6 @@ def draw_cv_pdf(data, language='en', template='classic'):
             c.drawString(margin, y, name)
         y -= 8 * mm
         
-        # Job title
         job_title = t(data.get('job_title', ''))
         if job_title:
             c.setFont('MainFont', 12)
@@ -228,68 +451,11 @@ def draw_cv_pdf(data, language='en', template='classic'):
                 c.drawString(margin, y, job_title)
             y -= 6 * mm
     
-    
-    # ========== ICON DRAWING FUNCTIONS ==========
-    def draw_email_icon(x, y, size=3*mm):
-        """Draw envelope icon"""
-        c.saveState()
-        c.setStrokeColorRGB(0.3, 0.3, 0.3)
-        c.setFillColorRGB(0.3, 0.3, 0.3)
-        c.setLineWidth(0.5)
-        # Envelope rectangle
-        c.rect(x, y - size*0.6, size*1.5, size*0.8, stroke=1, fill=0)
-        # Envelope flap (V shape)
-        c.line(x, y + size*0.2, x + size*0.75, y - size*0.3)
-        c.line(x + size*1.5, y + size*0.2, x + size*0.75, y - size*0.3)
-        c.restoreState()
-        return size*1.5 + 2*mm
-    
-    def draw_phone_icon(x, y, size=3*mm):
-        """Draw phone icon"""
-        c.saveState()
-        c.setStrokeColorRGB(0.3, 0.3, 0.3)
-        c.setFillColorRGB(0.3, 0.3, 0.3)
-        c.setLineWidth(0.5)
-        # Simple phone rectangle with rounded corners
-        c.roundRect(x, y - size*0.5, size*0.6, size, size*0.1, stroke=1, fill=0)
-        # Screen
-        c.rect(x + size*0.1, y - size*0.3, size*0.4, size*0.6, stroke=0, fill=1)
-        c.restoreState()
-        return size*0.6 + 2*mm
-    
-    def draw_location_icon(x, y, size=3*mm):
-        """Draw location pin icon"""
-        c.saveState()
-        c.setStrokeColorRGB(0.3, 0.3, 0.3)
-        c.setFillColorRGB(0.3, 0.3, 0.3)
-        c.setLineWidth(0.5)
-        # Pin point (triangle)
-        c.line(x + size*0.3, y - size*0.6, x + size*0.5, y - size)
-        c.line(x + size*0.7, y - size*0.6, x + size*0.5, y - size)
-        # Circle top
-        c.circle(x + size*0.5, y - size*0.3, size*0.35, stroke=1, fill=0)
-        c.restoreState()
-        return size + 2*mm
-    
-    def draw_linkedin_icon(x, y, size=3*mm):
-        """Draw link/chain icon"""
-        c.saveState()
-        c.setStrokeColorRGB(0.3, 0.3, 0.3)
-        c.setLineWidth(0.5)
-        # Two interlocking ovals
-        c.ellipse(x, y - size*0.4, x + size*0.8, y + size*0.2, stroke=1, fill=0)
-        c.ellipse(x + size*0.4, y - size*0.4, x + size*1.2, y + size*0.2, stroke=1, fill=0)
-        c.restoreState()
-        return size*1.2 + 2*mm
-    
-    # Contact info with icons
+    # ========== CONTACT INFO ==========
     c.setFillColorRGB(0, 0, 0)
     c.setFont('MainFont', 9)
     
-    # Calculate starting position
-    x_pos = margin if not is_rtl else page_width - margin
     spacing = 4 * mm
-    
     contact_data = []
     if data.get('email'):
         contact_data.append(('email', data['email']))
@@ -301,14 +467,12 @@ def draw_cv_pdf(data, language='en', template='classic'):
         contact_data.append(('linkedin', data['linkedin']))
     
     if is_rtl:
-        # RTL: draw from right to left
         x_pos = page_width - margin
         for icon_type, text in contact_data:
             text_width = c.stringWidth(text, 'MainFont', 9)
             x_pos -= text_width
             c.drawString(x_pos, y, text)
             x_pos -= 1*mm
-            
             icon_width = 4*mm
             x_pos -= icon_width
             if icon_type == 'email':
@@ -319,10 +483,8 @@ def draw_cv_pdf(data, language='en', template='classic'):
                 draw_location_icon(x_pos, y + 1*mm)
             elif icon_type == 'linkedin':
                 draw_linkedin_icon(x_pos, y + 1*mm)
-            
             x_pos -= spacing
     else:
-        # LTR: draw from left to right
         x_pos = margin
         for icon_type, text in contact_data:
             if icon_type == 'email':
@@ -335,7 +497,6 @@ def draw_cv_pdf(data, language='en', template='classic'):
                 icon_width = draw_linkedin_icon(x_pos, y + 1*mm)
             else:
                 icon_width = 0
-            
             x_pos += icon_width
             c.drawString(x_pos, y, text)
             x_pos += c.stringWidth(text, 'MainFont', 9) + spacing
@@ -352,21 +513,52 @@ def draw_cv_pdf(data, language='en', template='classic'):
     
     def draw_section_title(title):
         nonlocal y
+        check_page_break(20*mm)
         c.setFont('MainFontBold', 12)
         c.setFillColor(theme['primary'])
         
         if template == 'modern':
-            # Modern: colored background bar
             c.setFillColor(theme['accent'])
             c.rect(margin - 2*mm, y - 2*mm, page_width - 2*margin + 4*mm, 7*mm, fill=True, stroke=False)
             c.setFillColor(theme['primary'])
+        elif layout == 'diamond':
+            # Diamond bullet before title
+            gold = theme.get('accent2', theme['line_color'])
+            c.setFillColor(gold)
+            diamond_text = "◆ "
+            c.setFont('MainFontBold', 10)
+            if is_rtl:
+                c.drawRightString(page_width - margin, y, t(title))
+                c.drawRightString(page_width - margin + 4*mm + c.stringWidth(t(title), 'MainFontBold', 10), y, diamond_text)
+            else:
+                c.drawString(margin, y, diamond_text)
+                c.setFont('MainFontBold', 12)
+                c.setFillColor(theme['primary'])
+                c.drawString(margin + 5*mm, y, title)
+        elif layout == 'tech':
+            # Bracket style: [ SECTION ]
+            cyan = theme.get('accent2', theme['line_color'])
+            c.setFillColor(cyan)
+            bracket_title = f"[ {title} ]" if not is_rtl else t(title)
+            c.drawString(margin, y, bracket_title) if not is_rtl else c.drawRightString(page_width - margin, y, bracket_title)
+        elif layout == 'creative':
+            # Underlined section title with coral accent
+            accent2 = theme.get('accent2', theme['primary'])
+            if is_rtl:
+                c.drawRightString(page_width - margin, y, t(title))
+            else:
+                c.drawString(margin, y, title)
+            c.setStrokeColor(accent2)
+            c.setLineWidth(2)
+            c.line(margin, y - 3*mm, margin + 40*mm, y - 3*mm)
         
-        if is_rtl:
-            c.drawRightString(page_width - margin, y, t(title))
-        else:
-            c.drawString(margin, y, title)
+        if layout not in ['diamond', 'tech', 'creative']:
+            if is_rtl:
+                c.drawRightString(page_width - margin, y, t(title))
+            else:
+                c.drawString(margin, y, title)
         
-        if template in ['classic', 'minimal']:
+        if template in ['classic', 'minimal', 'professional']:
             y_line = y - 2*mm
             c.setStrokeColor(theme['line_color'])
             c.setLineWidth(0.5)
@@ -410,6 +602,7 @@ def draw_cv_pdf(data, language='en', template='classic'):
                 lines.append(current_line)
             
             for line in lines:
+                check_page_break()
                 if is_rtl:
                     c.drawRightString(page_width - margin, y, line)
                 else:
@@ -434,6 +627,7 @@ def draw_cv_pdf(data, language='en', template='classic'):
         
         for exp in experiences:
             if exp.get('company'):
+                check_page_break(25*mm)
                 c.setFont('MainFontBold', 10)
                 title_text = t(exp.get('title', ''))
                 dates = f"{t(exp.get('start_date', ''))} - {t(exp.get('end_date', ''))}"
@@ -472,6 +666,7 @@ def draw_cv_pdf(data, language='en', template='classic'):
         
         for edu in education:
             if edu.get('school'):
+                check_page_break(20*mm)
                 c.setFont('MainFontBold', 10)
                 degree = t(edu.get('degree', ''))
                 year = t(edu.get('year', ''))
@@ -511,7 +706,143 @@ def draw_cv_pdf(data, language='en', template='classic'):
     if skills:
         title = 'المهارات' if is_rtl else 'Skills'
         draw_section_title(title)
-        wrap_text(skills, 'MainFont', 10)
+        
+        if layout == 'creative':
+            # Display skills as inline tags
+            c.setFont('MainFont', 9)
+            skill_list = [s.strip() for s in skills.replace('\n', ',').split(',') if s.strip()]
+            x_pos = margin if not is_rtl else page_width - margin
+            for skill in skill_list:
+                skill_text = t(skill) if is_rtl else skill
+                sw = c.stringWidth(skill_text, 'MainFont', 9)
+                tag_w = sw + 6*mm
+                
+                if not is_rtl and x_pos + tag_w > page_width - margin:
+                    y -= 7*mm
+                    x_pos = margin
+                    check_page_break()
+                elif is_rtl and x_pos - tag_w < margin:
+                    y -= 7*mm
+                    x_pos = page_width - margin
+                    check_page_break()
+                
+                # Tag background
+                accent2 = theme.get('accent2', theme['primary'])
+                c.setFillColor(theme['accent'])
+                if is_rtl:
+                    c.roundRect(x_pos - tag_w, y - 1.5*mm, tag_w, 5.5*mm, 2*mm, fill=True, stroke=False)
+                    c.setFillColor(theme['primary'])
+                    c.drawRightString(x_pos - 3*mm, y, skill_text)
+                    x_pos -= tag_w + 2*mm
+                else:
+                    c.roundRect(x_pos, y - 1.5*mm, tag_w, 5.5*mm, 2*mm, fill=True, stroke=False)
+                    c.setFillColor(theme['primary'])
+                    c.drawString(x_pos + 3*mm, y, skill_text)
+                    x_pos += tag_w + 2*mm
+            y -= 5*mm
+        else:
+            wrap_text(skills, 'MainFont', 10)
+        y -= 3 * mm
+    
+    # ========== NEW SECTIONS ==========
+    
+    # Certifications
+    certifications = data.get('certifications', [])
+    if certifications and any(cert.get('name') for cert in certifications):
+        title = 'الشهادات' if is_rtl else 'Certifications'
+        draw_section_title(title)
+        
+        for cert in certifications:
+            if cert.get('name'):
+                check_page_break(15*mm)
+                c.setFont('MainFontBold', 10)
+                cert_name = t(cert.get('name', ''))
+                cert_year = t(cert.get('year', ''))
+                
+                if is_rtl:
+                    c.drawRightString(page_width - margin, y, cert_name)
+                    if cert_year:
+                        c.setFont('MainFont', 9)
+                        c.drawString(margin, y, cert_year)
+                else:
+                    c.drawString(margin, y, cert_name)
+                    if cert_year:
+                        c.setFont('MainFont', 9)
+                        c.drawRightString(page_width - margin, y, cert_year)
+                y -= 5 * mm
+                
+                issuer = cert.get('issuer', '')
+                if issuer:
+                    c.setFont('MainFont', 9)
+                    c.setFillColor(theme['secondary'])
+                    issuer_text = t(issuer)
+                    if is_rtl:
+                        c.drawRightString(page_width - margin, y, issuer_text)
+                    else:
+                        c.drawString(margin, y, issuer_text)
+                    c.setFillColorRGB(0, 0, 0)
+                    y -= 5 * mm
+                
+                y -= 2 * mm
+    
+    # Languages
+    languages = data.get('languages', [])
+    if languages and any(lng.get('language') for lng in languages):
+        title = 'اللغات' if is_rtl else 'Languages'
+        draw_section_title(title)
+        
+        for lng in languages:
+            if lng.get('language'):
+                check_page_break(10*mm)
+                c.setFont('MainFont', 10)
+                lang_name = t(lng.get('language', ''))
+                level = t(lng.get('level', ''))
+                
+                display = f"{lang_name}  —  {level}" if level else lang_name
+                if is_rtl:
+                    display = f"{level}  —  {lang_name}" if level else lang_name
+                
+                if is_rtl:
+                    c.drawRightString(page_width - margin, y, display)
+                else:
+                    c.drawString(margin, y, display)
+                y -= 5 * mm
+        y -= 2 * mm
+    
+    # Projects
+    projects = data.get('projects', [])
+    if projects and any(proj.get('name') for proj in projects):
+        title = 'المشاريع' if is_rtl else 'Projects'
+        draw_section_title(title)
+        
+        for proj in projects:
+            if proj.get('name'):
+                check_page_break(18*mm)
+                c.setFont('MainFontBold', 10)
+                proj_name = t(proj.get('name', ''))
+                
+                if is_rtl:
+                    c.drawRightString(page_width - margin, y, proj_name)
+                else:
+                    c.drawString(margin, y, proj_name)
+                y -= 5 * mm
+                
+                link = proj.get('link', '')
+                if link:
+                    c.setFont('MainFont', 8)
+                    c.setFillColor(theme.get('accent2', theme['primary']))
+                    if is_rtl:
+                        c.drawRightString(page_width - margin, y, link)
+                    else:
+                        c.drawString(margin, y, link)
+                    c.setFillColorRGB(0, 0, 0)
+                    y -= 4 * mm
+                
+                desc = proj.get('description', '')
+                if desc:
+                    wrap_text(desc)
+                
+                y -= 3 * mm
     
     c.save()
     buffer.seek(0)
