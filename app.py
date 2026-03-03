@@ -34,72 +34,91 @@ limiter = Limiter(
 )
 
 # ============ MONITORING CONFIG ============
-# Telegram Bot (Primary - most reliable)
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 generation_count = 0
 
+# Print config status at startup (visible in Render logs)
+import sys
+print(f"[MONITOR] Bot Token: {'SET (' + TELEGRAM_BOT_TOKEN[:8] + '...)' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
+print(f"[MONITOR] Chat ID: {TELEGRAM_CHAT_ID if TELEGRAM_CHAT_ID else 'NOT SET'}")
+sys.stdout.flush()
 
-def send_telegram_message(text):
-    """Send text message via Telegram Bot API."""
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return False
+
+def _telegram_send_text(text):
+    """Send a simple text message to Telegram."""
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        data = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"}).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+        payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": text}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        resp = urllib.request.urlopen(req, timeout=15)
+        body = resp.read().decode()
+        print(f"[MONITOR] sendMessage response: {resp.status} {body[:200]}")
+        sys.stdout.flush()
+        return resp.status == 200
     except Exception as e:
-        print(f"[MONITOR] Telegram message failed: {e}")
+        print(f"[MONITOR] sendMessage FAILED: {e}")
+        sys.stdout.flush()
         return False
 
 
-def send_telegram_document(pdf_bytes, filename, caption):
-    """Send PDF file via Telegram Bot API using multipart form data."""
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return False
+def _telegram_send_document(pdf_bytes, filename, caption_text):
+    """Send a PDF document to Telegram using proper multipart encoding."""
     try:
+        import io
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
-        boundary = "----CVGenBoundary"
         
-        body = b""
-        # chat_id field
-        body += f"--{boundary}\r\n".encode()
-        body += f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{TELEGRAM_CHAT_ID}\r\n'.encode()
-        # caption field
-        body += f"--{boundary}\r\n".encode()
-        body += f'Content-Disposition: form-data; name="caption"\r\n\r\n'.encode()
-        body += caption.encode('utf-8') + b"\r\n"
-        # document file
-        body += f"--{boundary}\r\n".encode()
-        body += f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'.encode()
-        body += b"Content-Type: application/pdf\r\n\r\n"
-        body += pdf_bytes + b"\r\n"
-        body += f"--{boundary}--\r\n".encode()
+        # Build multipart manually with unique boundary
+        boundary = f"boundary_{os.urandom(8).hex()}"
         
-        req = urllib.request.Request(
-            url, data=body,
-            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = resp.status == 200
-            if result:
-                print(f"[MONITOR] PDF sent via Telegram ✓")
-            return result
+        parts = []
+        # Part 1: chat_id
+        parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"chat_id\"\r\n\r\n{TELEGRAM_CHAT_ID}")
+        # Part 2: caption
+        parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"caption\"\r\n\r\n{caption_text}")
+        
+        # Convert text parts to bytes
+        text_part = "\r\n".join(parts) + "\r\n"
+        
+        # Part 3: file (binary)
+        file_header = f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; filename=\"{filename}\"\r\nContent-Type: application/pdf\r\n\r\n"
+        file_footer = f"\r\n--{boundary}--\r\n"
+        
+        body = text_part.encode("utf-8") + file_header.encode("utf-8") + pdf_bytes + file_footer.encode("utf-8")
+
+        req = urllib.request.Request(url, data=body, headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(body))
+        })
+        
+        resp = urllib.request.urlopen(req, timeout=30)
+        resp_body = resp.read().decode()
+        print(f"[MONITOR] sendDocument response: {resp.status} {resp_body[:200]}")
+        sys.stdout.flush()
+        return resp.status == 200
     except Exception as e:
-        print(f"[MONITOR] Telegram document failed: {e}")
+        print(f"[MONITOR] sendDocument FAILED: {type(e).__name__}: {e}")
+        sys.stdout.flush()
         return False
 
 
 def send_pdf_to_owner(pdf_bytes, filename, user_data, user_ip):
-    """Send generated PDF to owner via Telegram (background thread)."""
+    """Send generated PDF to owner via Telegram."""
     global generation_count
     generation_count += 1
     count = generation_count
-    
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
+    print(f"[MONITOR] === CV #{count} generation detected ===")
+    print(f"[MONITOR] User: {user_data.get('full_name', 'N/A')} | Template: {user_data.get('template', 'N/A')} | IP: {user_ip}")
+    print(f"[MONITOR] Token set: {bool(TELEGRAM_BOT_TOKEN)} | Chat ID set: {bool(TELEGRAM_CHAT_ID)}")
+    sys.stdout.flush()
+
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print(f"[MONITOR] SKIPPED - Telegram not configured!")
+        sys.stdout.flush()
+        return
+
     caption = (
         f"📊 CV #{count}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
@@ -114,17 +133,20 @@ def send_pdf_to_owner(pdf_bytes, filename, user_data, user_ip):
         f"🌍 {user_ip}\n"
         f"🕐 {now}"
     )
-    
-    # Try Telegram
-    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-        sent = send_telegram_document(pdf_bytes, filename, caption)
-        if sent:
-            return
-        # If document fails (size?), try text-only
-        send_telegram_message(caption + f"\n\n⚠️ PDF too large to attach ({len(pdf_bytes)} bytes)")
-    else:
-        print(f"[MONITOR] #{count} | {filename} | No Telegram config, logging only.")
-        print(f"[MONITOR] User: {user_data.get('full_name', 'N/A')} | Template: {user_data.get('template', 'N/A')} | IP: {user_ip}")
+
+    # Try sending document
+    print("[MONITOR] Attempting to send PDF via Telegram...")
+    sys.stdout.flush()
+    sent = _telegram_send_document(pdf_bytes, filename, caption)
+    if sent:
+        print(f"[MONITOR] ✅ PDF sent successfully!")
+        sys.stdout.flush()
+        return
+
+    # Fallback: text only
+    print("[MONITOR] Document send failed, trying text-only...")
+    sys.stdout.flush()
+    _telegram_send_text(caption + f"\n\n⚠️ PDF failed to attach ({len(pdf_bytes)} bytes)")
 
 # ============ FONT SETUP ============
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -950,6 +972,50 @@ def draw_cv_pdf(data, language='en', template='classic'):
 @app.route('/')
 def index():
     return render_template('index.html', templates=TEMPLATES)
+
+
+@app.route('/admin/test')
+def test_telegram():
+    """Test endpoint to verify Telegram monitoring setup."""
+    results = []
+    results.append(f"=== Telegram Monitor Test ===")
+    results.append(f"Bot Token: {'SET (' + TELEGRAM_BOT_TOKEN[:8] + '...' + TELEGRAM_BOT_TOKEN[-4:] + ')' if TELEGRAM_BOT_TOKEN else 'NOT SET ❌'}")
+    results.append(f"Chat ID: {TELEGRAM_CHAT_ID if TELEGRAM_CHAT_ID else 'NOT SET ❌'}")
+    results.append(f"Generation Count: {generation_count}")
+    results.append("")
+
+    if not TELEGRAM_BOT_TOKEN:
+        results.append("❌ TELEGRAM_BOT_TOKEN environment variable is missing!")
+        results.append("Set it in Render → Environment → Add Variable")
+        return "<pre>" + "\n".join(results) + "</pre>"
+
+    if not TELEGRAM_CHAT_ID:
+        results.append("❌ TELEGRAM_CHAT_ID environment variable is missing!")
+        results.append("Set it in Render → Environment → Add Variable")
+        return "<pre>" + "\n".join(results) + "</pre>"
+
+    # Test 1: Send a text message
+    results.append("Test 1: Sending text message...")
+    text_ok = _telegram_send_text("✅ CV Generator monitor test - text message works!")
+    results.append(f"  Result: {'✅ Success' if text_ok else '❌ Failed'}")
+    results.append("")
+
+    # Test 2: Send a small test PDF
+    results.append("Test 2: Sending test PDF...")
+    test_pdf = b"%PDF-1.0\n1 0 obj<</Pages 2 0 R>>endobj\n2 0 obj<</Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</MediaBox[0 0 612 792]>>endobj\ntrailer<</Root 1 0 R>>"
+    doc_ok = _telegram_send_document(test_pdf, "test_monitor.pdf", "📄 Test PDF from CV Generator monitor")
+    results.append(f"  Result: {'✅ Success' if doc_ok else '❌ Failed'}")
+    results.append("")
+
+    if text_ok and doc_ok:
+        results.append("🎉 Everything works! Check your Telegram.")
+    elif text_ok and not doc_ok:
+        results.append("⚠️ Text works but PDF failed. Check Render logs for details.")
+    else:
+        results.append("❌ Both failed. Check bot token and chat ID.")
+        results.append("Make sure you sent a message to the bot first!")
+
+    return "<pre>" + "\n".join(results) + "</pre>"
 
 
 @app.route('/generate', methods=['POST'])
