@@ -494,6 +494,58 @@ async function renderPreview() {
    onto a canvas behaves the same everywhere, so there is one code path
    rather than a guess about the device. */
 
+function pdfWorkerReady() {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* The sample on the landing page, drawn rather than embedded.
+   A phone showed a file name and an "open" link where a laptop showed the
+   document - and the sample exists precisely so a first-time visitor can
+   see what they would get before typing anything. On the device most of
+   them arrive with, it was showing nothing. */
+async function paintSample() {
+    const box = $('samplePaper');
+
+    if (!box) return;
+
+    try {
+        const buffer = await (await fetch('/sample')).arrayBuffer();
+
+        if (!window.pdfjsLib) {
+            // No CDN: an embed still works on a desktop, and a phone falls
+            // back to the link it was showing before - no worse than before.
+            const blob = new Blob([buffer], { type: 'application/pdf' });
+            box.innerHTML = `<iframe src="${URL.createObjectURL(blob)}#toolbar=0&navpanes=0"
+                title="${T('نموذج سيرة ذاتية', 'Sample CV')}"></iframe>`;
+            return;
+        }
+
+        pdfWorkerReady();
+
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        const page = await pdf.getPage(1);
+        const canvas = document.createElement('canvas');
+
+        const base = page.getViewport({ scale: 1 });
+        const height = box.clientHeight || 320;
+        const scale = (height / base.height) * Math.min(window.devicePixelRatio || 1, 2);
+        const viewport = page.getViewport({ scale });
+
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        box.innerHTML = '';
+        box.appendChild(canvas);
+
+    } catch (e) {
+        /* The sample is an illustration; failing to draw it is not worth
+           telling anyone about. */
+    }
+}
+
 async function paintPreview(buffer, seq) {
     const box = $('previewBox');
 
@@ -506,8 +558,7 @@ async function paintPreview(buffer, seq) {
         return;
     }
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfWorkerReady();
 
     const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
@@ -1128,6 +1179,8 @@ document.addEventListener('input', e => {
     addExp();
     addEdu();
     setLang('ar');
+
+    paintSample();
 
     const d = readDraft();
     if (d && d.cv && (d.cv.full_name || d.cv.summary ||

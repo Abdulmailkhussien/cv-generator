@@ -408,6 +408,45 @@ def _blank_cv():
     }
 
 
+# A pasted CV is often a template somebody never finished: "[سنة البدء]",
+# "[اسم الجامعة]", "[Company Name]". Carrying those through is faithful but
+# useless - they reach the PDF as literal brackets, and on a translation the
+# rule about not translating university names preserves them in Arabic
+# inside an English CV. That is exactly what one user's file showed.
+#
+# An unfilled placeholder is not a fact. Treat it as the blank it is.
+def _is_placeholder(value):
+    text = (value or "").strip()
+
+    if len(text) < 2:
+        return False
+
+    pairs = (("[", "]"), ("{", "}"), ("<", ">"), ("(", ")"))
+
+    for open_ch, close_ch in pairs:
+        if text.startswith(open_ch) and text.endswith(close_ch):
+            # "(remote)" is a real detail; "[اسم الشركة]" is not. The
+            # difference is whether anything outside the brackets survives.
+            return True
+
+    return False
+
+
+def _drop_placeholders(data):
+    """Blank any field whose whole value is an unfilled placeholder."""
+    for key, value in list(data.items()):
+        if isinstance(value, str):
+            if _is_placeholder(value):
+                data[key] = ""
+
+        elif isinstance(value, list):
+            for row in value:
+                if isinstance(row, dict):
+                    _drop_placeholders(row)
+
+    return data
+
+
 def _normalise(data):
     """Make the answer safe to hand straight to the form.
 
@@ -430,7 +469,7 @@ def _normalise(data):
             out[key] = [item for item in value
                         if isinstance(item, dict)] if isinstance(value, list) else []
 
-    return out
+    return _drop_placeholders(out)
 
 
 # ============ THE THREE DOORS ============
@@ -656,10 +695,16 @@ def translate_cv(cv_data, target_language):
         "Keep every list the same length and in the same order. A person's",
         "history does not change with the language it is written in.",
         "",
-        "Do NOT translate: personal names, company names, product names,",
-        "university names with an official name in the other language,",
-        "technologies and certifications. 'Python' stays 'Python'.",
-        "Transliterate a personal name rather than translating its meaning.",
+        "full_name MUST be written in the target script. Transliterate the",
+        "sound of the name, never translate its meaning: عبد الملك حسين",
+        "becomes 'Abdulmalik Hussein', not 'Servant of the King'. An Arabic",
+        "name left in Arabic letters on an English CV is the single most",
+        "visible thing a reader notices, so this is not optional.",
+        "",
+        "Do NOT translate: company names, product names, technologies and",
+        "certifications. 'Python' stays 'Python', 'Odoo' stays 'Odoo'.",
+        "A university keeps its official name in the target language when it",
+        "has one, otherwise transliterate it.",
         "",
         "Dates, numbers and links are copied exactly.",
         "",

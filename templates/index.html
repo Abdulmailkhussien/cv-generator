@@ -403,6 +403,8 @@
             border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
             background: #fff; height: 320px;
         }
+        .sample-paper { display: grid; place-items: center; }
+        .sample-paper canvas { max-width: 100%; max-height: 100%; height: auto; display: block; }
         .sample-paper iframe { width: 100%; height: 100%; border: 0; display: block; }
 
         .pair {
@@ -552,10 +554,12 @@
                         </div>
                     </div>
                     <div>
-                        <div class="sample-paper">
-                            <iframe src="/sample#toolbar=0&navpanes=0&view=FitH" loading="lazy"
-                                title="نموذج سيرة ذاتية"></iframe>
-                        </div>
+                        <!-- Painted by pdf.js, for the same reason as the
+                             preview in step 3: Android Chrome will not render
+                             a PDF in an iframe and shows a file name with an
+                             "open" link instead, which is what a phone saw
+                             here while a laptop saw the document. -->
+                        <div class="sample-paper" id="samplePaper"></div>
                         <div class="pair" data-ar="نموذج حقيقي مولّد بالأداة نفسها"
                             data-en="A real sample, made by this tool">نموذج حقيقي مولّد بالأداة نفسها</div>
                     </div>
