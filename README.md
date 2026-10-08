@@ -9,6 +9,27 @@ A professional CV generator web application with full Arabic language support, m
 - **Security**: Rate limiting enabled to prevent abuse.
 - **Portability**: Fonts are bundled, so it works on Linux/Docker/Windows.
 
+## Environment Variables (Render -> Environment)
+
+Set on the server only. Never commit a key: this repository is public, and a
+value committed once stays in git history after it is deleted.
+
+| Variable | Required | What it does |
+|---|---|---|
+| `GEMINI_API_KEY` | for AI features | Google **AI Studio** key. The consumer Gemini Pro subscription is a different product and does not work here. |
+| `GEMINI_MODEL` | no | Defaults to `gemini-2.0-flash`. Override when a model is retired. |
+| `ADMIN_TOKEN` | recommended | Guards `/admin/test`, reached at `/admin/test?t=<value>`. Unset means the route returns 404. |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | no | Existing monitoring. |
+
+Without `GEMINI_API_KEY` the site still works: the three import doors report
+that AI is unavailable and the manual form is unaffected.
+
+To see which models a key can reach:
+
+```bash
+curl "https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_KEY"
+```
+
 ## Installation
 
 1. **Install Python**: Ensure Python 3.8+ is installed.

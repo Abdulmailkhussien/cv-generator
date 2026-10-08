@@ -4,7 +4,7 @@ Uses ReportLab directly for PDF generation with proper Arabic support
 9 ATS-Friendly Templates with Certifications, Languages, and Projects
 """
 
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, jsonify, abort
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
@@ -37,6 +37,20 @@ limiter = Limiter(
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 generation_count = 0
+
+# Visits, so the next decision rests on a number. Telegram only fires on a
+# successful generation, which answers "did anyone finish" and says nothing
+# about "did anyone arrive" - and those two point at completely different
+# problems. One counts the landing page, the other counts finished CVs; the
+# gap between them is the thing worth watching.
+visit_count = 0
+
+# /admin/test sends to your Telegram and prints your chat id. Without a
+# secret, any visitor can read it and flood you. Set ADMIN_TOKEN in Render
+# and reach it at /admin/test?t=<value>; leave it unset and the route is off.
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "").strip()
+
+import gemini
 
 # Print config status at startup (visible in Render logs)
 import sys
@@ -971,13 +985,24 @@ def draw_cv_pdf(data, language='en', template='classic'):
 
 @app.route('/')
 def index():
-    return render_template('index.html', templates=TEMPLATES)
+    global visit_count
+    visit_count += 1
+    return render_template('index.html', templates=TEMPLATES,
+                           ai_enabled=gemini.is_configured())
 
 
 @app.route('/admin/test')
 def test_telegram():
     """Test endpoint to verify Telegram monitoring setup."""
+    # Was open to the world, printing the chat id in full and the ends of the
+    # bot token, and letting anyone trigger messages to the phone.
+    if not ADMIN_TOKEN or request.args.get('t', '') != ADMIN_TOKEN:
+        abort(404)
+
     results = []
+    results.append(f"Visits: {visit_count}")
+    results.append(f"Gemini: {'configured' if gemini.is_configured() else 'NOT configured'}")
+    results.append("")
     results.append(f"=== Telegram Monitor Test ===")
     results.append(f"Bot Token: {'SET (' + TELEGRAM_BOT_TOKEN[:8] + '...' + TELEGRAM_BOT_TOKEN[-4:] + ')' if TELEGRAM_BOT_TOKEN else 'NOT SET ❌'}")
     results.append(f"Chat ID: {TELEGRAM_CHAT_ID if TELEGRAM_CHAT_ID else 'NOT SET ❌'}")
@@ -1016,6 +1041,260 @@ def test_telegram():
         results.append("Make sure you sent a message to the bot first!")
 
     return "<pre>" + "\n".join(results) + "</pre>"
+
+
+# ============ AI ENDPOINTS ============
+#
+# Every one of these returns the same CV dict the form already binds to, so
+# the browser does not care which door the data came through.
+#
+# The limits are far tighter than the site's 2000/day: these cost money per
+# call, and a single script left running overnight would spend the month's
+# quota before anyone noticed.
+
+# Errors are returned as a code, and the browser holds the Arabic wording.
+# Sending the text from here would mean two places to edit for one message.
+def _ai_error(exc):
+    code = str(exc) if isinstance(exc, gemini.GeminiError) else "upstream"
+    status = 429 if code == "quota" else 400 if code == "too_large" else 502
+    return jsonify({"ok": False, "error": code}), status
+
+
+@app.route('/api/import/text', methods=['POST'])
+@limiter.limit("30 per hour")
+def api_import_text():
+    """A CV written somewhere else - including an answer from a chat model.
+
+    This is the door that turns the competition into the funnel: someone who
+    already asked an AI to write their CV arrives holding text and nothing
+    that can turn it into a real Arabic PDF.
+    """
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or '').strip()
+    language = data.get('language', 'ar')
+
+    if len(text) < 40:
+        return jsonify({"ok": False, "error": "too_short"}), 400
+
+    try:
+        return jsonify({"ok": True, "cv": gemini.extract_from_text(text, language)})
+    except Exception as exc:
+        return _ai_error(exc)
+
+
+@app.route('/api/import/file', methods=['POST'])
+@limiter.limit("20 per hour")
+def api_import_file():
+    """An existing CV as PDF or Word, handed to the model as a document.
+
+    Deliberately not parsed here. Arabic text pulled out of a PDF locally
+    comes back with the letters disconnected and the word order reversed,
+    and no amount of post-processing reassembles it reliably.
+    """
+    upload = request.files.get('file')
+
+    if not upload:
+        return jsonify({"ok": False, "error": "no_file"}), 400
+
+    raw = upload.read()
+    mime = upload.mimetype or 'application/pdf'
+
+    allowed = (
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+
+    if mime not in allowed:
+        return jsonify({"ok": False, "error": "bad_type"}), 400
+
+    language = request.form.get('language', 'ar')
+
+    try:
+        return jsonify({"ok": True,
+                        "cv": gemini.extract_from_document(raw, mime, language)})
+    except Exception as exc:
+        return _ai_error(exc)
+
+
+@app.route('/api/import/audio', methods=['POST'])
+@limiter.limit("15 per hour")
+def api_import_audio():
+    """Someone talking about their own working life.
+
+    The door for people who will not fill in twenty-seven boxes - which on a
+    phone is most of them.
+    """
+    upload = request.files.get('audio')
+
+    if not upload:
+        return jsonify({"ok": False, "error": "no_file"}), 400
+
+    raw = upload.read()
+
+    # Browsers disagree on what they record: Chrome gives audio/webm, Safari
+    # audio/mp4. Both are accepted by the model, so neither is rejected here.
+    mime = (upload.mimetype or 'audio/webm').split(';')[0]
+
+    if not mime.startswith('audio/'):
+        return jsonify({"ok": False, "error": "bad_type"}), 400
+
+    language = request.form.get('language', 'ar')
+
+    try:
+        return jsonify({"ok": True,
+                        "cv": gemini.extract_from_audio(raw, mime, language)})
+    except Exception as exc:
+        return _ai_error(exc)
+
+
+@app.route('/api/match-job', methods=['POST'])
+@limiter.limit("40 per hour")
+def api_match_job():
+    """One CV against one advertisement.
+
+    The reason to come back. A CV builder is opened once; this is opened for
+    every advert, which is the difference between a tool someone used and a
+    tool someone uses.
+    """
+    data = request.get_json(silent=True) or {}
+    cv_data = data.get('cv') or {}
+    job_text = (data.get('job_text') or '').strip()
+    language = data.get('language', 'ar')
+
+    if len(job_text) < 60:
+        return jsonify({"ok": False, "error": "job_too_short"}), 400
+
+    if not cv_data.get('full_name') and not cv_data.get('experiences'):
+        return jsonify({"ok": False, "error": "cv_empty"}), 400
+
+    try:
+        return jsonify({"ok": True,
+                        "result": gemini.match_job(cv_data, job_text, language)})
+    except Exception as exc:
+        return _ai_error(exc)
+
+
+# ============ SAMPLE ============
+#
+# The landing page used to show an empty form and ask for twenty-seven
+# answers before revealing anything. This is what people get, rendered by
+# the same function that renders theirs, so the Arabic typesetting on the
+# page is the real thing rather than a promise about it.
+
+SAMPLE_CV = {
+    'language': 'ar',
+    'template': 'modern',
+    'full_name': 'ليان العبدالله',
+    'job_title': 'أخصائية تسويق رقمي',
+    'email': 'layan@example.com',
+    'phone': '0790000000',
+    'location': 'عمّان، الأردن',
+    'linkedin': 'linkedin.com/in/layan',
+    'summary': 'أخصائية تسويق رقمي بخبرة أربع سنوات في إدارة الحملات المدفوعة '
+               'وتحليل أدائها. خفّضت كلفة الاستحواذ على العميل بنسبة 31% خلال عام.',
+    'skills': 'Google Ads, Meta Ads, Google Analytics, تحليل البيانات, كتابة المحتوى, SEO',
+    'experiences': [
+        {
+            'title': 'أخصائية تسويق رقمي',
+            'company': 'شركة المدى للتجارة الإلكترونية',
+            'start_date': '2023',
+            'end_date': 'الآن',
+            'description': 'أدرتُ ميزانية إعلانية شهرية قدرها 25 ألف دينار عبر Google وMeta.\n'
+                           'خفّضتُ كلفة الاستحواذ 31% خلال اثني عشر شهراً.\n'
+                           'بنيتُ لوحة متابعة أسبوعية اعتمدتها ثلاث فرق.',
+        },
+        {
+            'title': 'مساعدة تسويق',
+            'company': 'وكالة بيان',
+            'start_date': '2021',
+            'end_date': '2023',
+            'description': 'أعددتُ تقارير الأداء الشهرية لسبعة عملاء.\n'
+                           'كتبتُ محتوى الحملات باللغتين العربية والإنجليزية.',
+        },
+    ],
+    'education': [
+        {'degree': 'بكالوريوس', 'field': 'إدارة أعمال',
+         'school': 'الجامعة الأردنية', 'year': '2021'},
+    ],
+    'certifications': [
+        {'name': 'Google Analytics Certified', 'issuer': 'Google', 'year': '2023'},
+    ],
+    'languages': [
+        {'language': 'العربية', 'level': 'اللغة الأم'},
+        {'language': 'الإنجليزية', 'level': 'متقدم'},
+    ],
+    'projects': [],
+}
+
+
+@app.route('/sample')
+def sample_cv():
+    """A finished CV, for the landing page. Cached: it never changes."""
+    try:
+        buffer = draw_cv_pdf(SAMPLE_CV, 'ar', SAMPLE_CV['template'])
+        response = send_file(buffer, mimetype='application/pdf',
+                             as_attachment=False, download_name='sample.pdf')
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
+
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(exc)}, 500
+
+
+@app.route('/api/translate', methods=['POST'])
+@limiter.limit("25 per hour")
+def api_translate():
+    """The same CV in the other language.
+
+    The point of the project in one endpoint: a chat model will translate
+    the words and leave you fighting a word processor for an Arabic PDF a
+    filter can read. Here one input produces both files.
+    """
+    data = request.get_json(silent=True) or {}
+    cv_data = data.get('cv') or {}
+    target = data.get('target', 'en')
+
+    if target not in ('ar', 'en'):
+        return jsonify({"ok": False, "error": "bad_type"}), 400
+
+    if not cv_data.get('full_name') and not cv_data.get('experiences'):
+        return jsonify({"ok": False, "error": "cv_empty"}), 400
+
+    try:
+        return jsonify({"ok": True, "cv": gemini.translate_cv(cv_data, target)})
+    except Exception as exc:
+        return _ai_error(exc)
+
+
+@app.route('/preview', methods=['POST'])
+@limiter.limit("600 per hour")
+def preview_cv():
+    """The same PDF, rendered for the screen instead of the download folder.
+
+    Deliberately the real renderer rather than an HTML imitation. A preview
+    drawn by different code drifts from the file by a line here and a font
+    there, and the complaint it produces - "the download does not match what
+    I saw" - is worse than having no preview at all.
+
+    It does NOT notify Telegram. A preview fires on every pause in typing,
+    so routing it through send_pdf_to_owner would mean dozens of messages
+    per visitor and a phone nobody can use.
+    """
+    try:
+        data = request.json or {}
+        buffer = draw_cv_pdf(data,
+                             data.get('language', 'en'),
+                             data.get('template', 'classic'))
+
+        return send_file(buffer, mimetype='application/pdf',
+                         as_attachment=False, download_name='preview.pdf')
+
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(exc)}, 500
 
 
 @app.route('/generate', methods=['POST'])

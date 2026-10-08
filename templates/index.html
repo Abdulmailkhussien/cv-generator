@@ -1,1401 +1,766 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CV Generator — Professional Resume Builder</title>
+    <title>منشئ السيرة الذاتية — سيرة عربية تمرّ أنظمة ATS</title>
     <meta name="description"
-        content="Create ATS-friendly professional resumes with 9 beautiful templates. Supports English and Arabic.">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;600;700;800&display=swap"
+        content="أنشئ سيرة ذاتية عربية أو إنجليزية متوافقة مع أنظمة ATS. احكِ عن نفسك صوتاً، أو ارفع سيرتك الحالية، أو الصقها من الذكاء الاصطناعي، واحصل على ملف PDF منسّق.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+
     <style>
+        /* ============================================================
+           PALETTE
+           ============================================================
+           What this makes is a formal document a hiring manager reads.
+           The previous interface was a dark neon gradient with floating
+           orbs - the default look of every AI product shipped this year,
+           and it promises the opposite of what comes out. Warm paper, ink
+           and a deep green read as "serious document". The gold appears in
+           exactly one place, the match score, so it still means something
+           when it shows up.
+
+           Both themes are tokens and nothing below hardcodes a colour, so
+           the dark theme is a designed theme rather than an inversion that
+           leaves one panel unreadable. */
+
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
-            --bg: #09090b;
-            --bg-subtle: #0e0e12;
-            --surface: rgba(24, 24, 32, 0.75);
-            --surface-solid: #18181f;
-            --surface-light: rgba(38, 38, 50, 0.65);
-            --surface-hover: rgba(45, 45, 60, 0.7);
-            --text: #f4f4f5;
-            --text-secondary: #d4d4d8;
-            --text-muted: #71717a;
-            --border: rgba(63, 63, 80, 0.5);
-            --border-light: rgba(63, 63, 80, 0.25);
-            --success: #22c55e;
-            --error: #ef4444;
-            --gradient: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
-            --gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1));
-            --glow: 0 0 60px rgba(99, 102, 241, 0.15);
-            --radius: 16px;
-            --radius-sm: 10px;
-            --radius-xs: 6px;
+            --paper: #FBFAF8;
+            --surface: #FFFFFF;
+            --surface-2: #F4F1EC;
+            --ink: #15202B;
+            --ink-soft: #5A6672;
+            --ink-faint: #8C96A1;
+            --line: #E4E0D9;
+            --line-strong: #CFC9BF;
+            --brand: #0F5C4E;
+            --brand-ink: #0B4539;
+            --brand-soft: #E6F0ED;
+            --gold: #B5812F;
+            --gold-soft: #F7EEDD;
+            --danger: #B23B3B;
+            --danger-soft: #FBEDED;
+            --ok: #2E7D63;
+            --ok-soft: #E6F2EE;
+            --shadow: 0 1px 2px rgba(21, 32, 43, .05), 0 8px 24px rgba(21, 32, 43, .06);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root[data-theme="dark"] {
+            --paper: #10151A;
+            --surface: #171D23;
+            --surface-2: #1F262D;
+            --ink: #E9ECEF;
+            --ink-soft: #9EA9B4;
+            --ink-faint: #6F7B87;
+            --line: #2A333C;
+            --line-strong: #3A4650;
+            --brand: #45A890;
+            --brand-ink: #7FCBB7;
+            --brand-soft: #14302A;
+            --gold: #D4A458;
+            --gold-soft: #332817;
+            --danger: #E07676;
+            --danger-soft: #341C1C;
+            --ok: #4FB795;
+            --ok-soft: #14302A;
+            --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
+            font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
         }
 
-        body.rtl {
-            direction: rtl;
-            font-family: 'Cairo', sans-serif;
-        }
-
-        /* ============ BACKGROUND EFFECTS ============ */
-        .bg-effects {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.12;
-            animation: orbFloat 20s ease-in-out infinite;
-        }
-
-        .bg-orb:nth-child(1) {
-            width: 600px;
-            height: 600px;
-            background: #6366f1;
-            top: -200px;
-            left: -100px;
-            animation-delay: 0s;
-        }
-
-        .bg-orb:nth-child(2) {
-            width: 500px;
-            height: 500px;
-            background: #a855f7;
-            bottom: -150px;
-            right: -100px;
-            animation-delay: -7s;
-        }
-
-        .bg-orb:nth-child(3) {
-            width: 400px;
-            height: 400px;
-            background: #ec4899;
-            top: 40%;
-            left: 60%;
-            animation-delay: -14s;
-            opacity: 0.08;
-        }
-
-        @keyframes orbFloat {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -30px) scale(1.05);
-            }
+        body.ltr { direction: ltr; text-align: left; font-family: 'Inter', 'Cairo', system-ui, sans-serif; }
 
-            66% {
-                transform: translate(-20px, 20px) scale(0.95);
-            }
-        }
-
-        /* ============ LAYOUT ============ */
-        .page-wrapper {
-            position: relative;
-            z-index: 1;
-            padding: 2rem 1.5rem 4rem;
-        }
-
-        .container {
-            max-width: 780px;
-            margin: 0 auto;
-        }
-
-        /* ============ HEADER ============ */
-        .header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-            animation: fadeInDown 0.8s ease-out;
-        }
-
-        .logo-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 64px;
-            height: 64px;
-            background: var(--gradient);
-            border-radius: 18px;
-            font-size: 28px;
-            margin-bottom: 1.25rem;
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
-            animation: logoPulse 3s ease-in-out infinite;
-        }
-
-        @keyframes logoPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
-            }
-
-            50% {
-                box-shadow: 0 8px 48px rgba(99, 102, 241, 0.5);
-            }
-        }
-
-        h1 {
-            font-size: 2.75rem;
-            font-weight: 800;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.02em;
-            line-height: 1.1;
-        }
+        .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 80px; }
 
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-            margin-top: 0.6rem;
-            font-weight: 400;
-        }
+        /* ============ TOP BAR ============ */
 
-        /* ============ LANGUAGE TOGGLE ============ */
-        .lang-toggle {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            margin-bottom: 2rem;
-            background: var(--surface);
-            backdrop-filter: blur(20px);
-            border-radius: 50px;
-            padding: 4px;
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
-            border: 1px solid var(--border-light);
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; padding: 18px 0; margin-bottom: 26px;
+            border-bottom: 1px solid var(--line); flex-wrap: wrap;
         }
 
-        .lang-btn {
-            padding: 0.55rem 1.75rem;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; }
+        .brand-mark {
+            width: 34px; height: 34px; border-radius: 9px; background: var(--brand);
+            color: #fff; display: grid; place-items: center; font-size: 1rem;
         }
 
-        .lang-btn.active {
-            background: var(--gradient);
-            color: white;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
-        }
+        .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
-        .lang-btn:not(.active):hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.05);
+        .seg { display: flex; background: var(--surface-2); border-radius: 9px; padding: 3px; }
+        .seg button {
+            border: 0; background: transparent; cursor: pointer; padding: 6px 14px;
+            border-radius: 7px; font-family: inherit; font-size: .85rem;
+            font-weight: 600; color: var(--ink-soft);
         }
+        .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
 
-        /* ============ MAIN CARD ============ */
-        .main-card {
-            background: var(--surface);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: var(--radius);
-            padding: 2rem;
-            border: 1px solid var(--border);
-            box-shadow: var(--glow);
-            animation: fadeInUp 0.6s ease-out 0.2s both;
+        .icon-btn {
+            width: 36px; height: 36px; border-radius: 9px; cursor: pointer;
+            border: 1px solid var(--line); background: var(--surface);
+            font-size: 1rem; color: var(--ink-soft);
         }
+        .icon-btn:hover { border-color: var(--line-strong); }
 
-        /* ============ SECTION HEADERS ============ */
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            margin-bottom: 1.25rem;
-            margin-top: 2rem;
-        }
+        /* ============ STEP RAIL ============
+           Three steps, one on screen at a time. The old page put the doors,
+           nine templates, twenty-seven fields and the job panel in a single
+           scroll, which reads as a bill rather than an offer. */
 
-        .section-header:first-child {
-            margin-top: 0;
-        }
+        .rail { display: flex; gap: 10px; margin-bottom: 28px; }
 
-        .section-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 34px;
-            height: 34px;
-            background: var(--gradient-subtle);
-            border-radius: var(--radius-xs);
-            font-size: 16px;
-            flex-shrink: 0;
+        .rail-step {
+            flex: 1; display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px; border-radius: 12px; cursor: pointer; text-align: start;
+            border: 1px solid var(--line); background: var(--surface);
+            font-family: inherit; color: inherit;
         }
+        .rail-step.on { border-color: var(--brand); background: var(--brand-soft); }
+        .rail-step.done .rail-num { background: var(--ok); color: #fff; border-color: var(--ok); }
 
-        .section-title {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0;
+        .rail-num {
+            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+            display: grid; place-items: center; font-size: .82rem; font-weight: 700;
+            border: 1px solid var(--line-strong); color: var(--ink-soft); background: var(--surface);
         }
+        .rail-step.on .rail-num { background: var(--brand); color: #fff; border-color: var(--brand); }
+        .rail-label { font-size: .9rem; font-weight: 700; }
+        .rail-hint { font-size: .74rem; color: var(--ink-faint); }
 
-        .section-line {
-            flex: 1;
-            height: 1px;
-            background: var(--border);
+        @media (max-width: 720px) {
+            .rail-hint { display: none; }
+            .rail-step { padding: 10px; }
+            .rail-label { font-size: .8rem; }
         }
 
-        /* ============ TEMPLATE GRID ============ */
-        .template-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
+        .step { display: none; }
+        .step.on { display: block; }
 
-        .template-card {
-            position: relative;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 1rem 0.75rem 0.75rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--surface-light);
-            text-align: center;
-            overflow: hidden;
-        }
+        /* ============ CARDS ============ */
 
-        .template-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--card-color, var(--primary));
-            opacity: 0.6;
-            transition: opacity 0.3s, height 0.3s;
+        .card {
+            background: var(--surface); border: 1px solid var(--line);
+            border-radius: 16px; padding: 26px; box-shadow: var(--shadow);
         }
 
-        .template-card:hover {
-            border-color: var(--card-color, var(--primary));
-            background: var(--surface-hover);
-            transform: translateY(-2px);
-        }
+        h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; }
+        .lede { color: var(--ink-soft); font-size: .93rem; margin-top: 6px; }
 
-        .template-card:hover::before {
-            opacity: 1;
-        }
+        /* ============ STEP 1 ============ */
 
-        .template-card.selected {
-            border-color: var(--card-color, var(--primary));
-            background: var(--surface-hover);
-            box-shadow: 0 0 20px rgba(var(--card-color-rgb, 99, 102, 241), 0.2);
-        }
+        .doors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
 
-        .template-card.selected::before {
-            opacity: 1;
-            height: 4px;
-        }
+        /* One column on a phone. Three doors side by side become three
+           unreadable slivers, and the phone is exactly where the voice door
+           earns its place. */
+        @media (max-width: 760px) { .doors { grid-template-columns: 1fr; } }
 
-        .template-card .check-mark {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 20px;
-            height: 20px;
-            background: var(--card-color, var(--primary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: white;
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.3s;
+        .door {
+            cursor: pointer; text-align: center; padding: 26px 16px; border-radius: 14px;
+            border: 1px solid var(--line); background: var(--surface);
+            transition: border-color .15s, transform .15s, background .15s;
         }
+        .door:hover { border-color: var(--brand); transform: translateY(-2px); }
+        .door.on { border-color: var(--brand); background: var(--brand-soft); }
+        .door-icon { font-size: 1.85rem; }
+        .door-title { font-weight: 700; margin-top: 10px; }
+        .door-hint { font-size: .8rem; color: var(--ink-faint); margin-top: 4px; }
 
-        body.rtl .template-card .check-mark {
-            right: auto;
-            left: 8px;
-        }
+        .panel { display: none; margin-top: 18px; padding: 22px; border-radius: 14px; background: var(--surface-2); }
+        .panel.on { display: block; }
 
-        .template-card.selected .check-mark {
-            opacity: 1;
-            transform: scale(1);
+        .manual-link {
+            display: block; width: 100%; margin-top: 18px; padding: 14px;
+            border: 1px dashed var(--line-strong); border-radius: 12px;
+            background: transparent; cursor: pointer; font-family: inherit;
+            font-size: .9rem; color: var(--ink-soft);
         }
+        .manual-link:hover { border-color: var(--brand); color: var(--brand); }
 
-        .template-swatch {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            margin: 0 auto 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: white;
-            font-weight: 700;
+        .rec-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .rec-btn {
+            width: 62px; height: 62px; border-radius: 50%; flex-shrink: 0; border: 0;
+            cursor: pointer; font-size: 1.4rem; background: var(--danger); color: #fff;
         }
-
-        .template-name {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 2px;
+        .rec-btn.live { animation: pulse 1.3s infinite; }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(178, 59, 59, .55); }
+            70%  { box-shadow: 0 0 0 16px rgba(178, 59, 59, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(178, 59, 59, 0); }
         }
+        .rec-time { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        .template-desc {
-            font-size: 0.7rem;
-            color: var(--text-muted);
+        .drop {
+            border: 2px dashed var(--line-strong); border-radius: 12px;
+            padding: 30px; text-align: center; cursor: pointer; background: var(--surface);
         }
+        .drop.over { border-color: var(--brand); background: var(--brand-soft); }
 
-        /* ============ FORM ELEMENTS ============ */
-        .form-group {
-            margin-bottom: 0.9rem;
-        }
+        .note { font-size: .82rem; color: var(--ink-faint); line-height: 1.75; margin-top: 14px; }
 
-        label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 0.35rem;
-            font-weight: 500;
-        }
+        /* ============ STEP 2 ============ */
 
-        input,
-        textarea,
-        select {
-            width: 100%;
-            padding: 0.7rem 0.9rem;
-            background: rgba(30, 30, 42, 0.8);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xs);
-            color: var(--text);
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.25s;
-        }
+        .editor { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .editor { grid-template-columns: 1fr; } }
 
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px rgba(30, 30, 42, 0.95) inset !important;
-            -webkit-text-fill-color: var(--text) !important;
-        }
+        .nav { position: sticky; top: 18px; display: flex; flex-direction: column; gap: 4px; }
+        @media (max-width: 900px) { .nav { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; } }
 
-        input:focus,
-        textarea:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        .nav button {
+            display: flex; align-items: center; gap: 9px; white-space: nowrap;
+            border: 0; background: transparent; cursor: pointer; padding: 10px 12px;
+            border-radius: 9px; text-align: start; font-family: inherit;
+            font-size: .88rem; font-weight: 600; color: var(--ink-soft);
         }
+        .nav button:hover { background: var(--surface-2); }
+        .nav button.on { background: var(--brand-soft); color: var(--brand-ink); }
 
-        textarea {
-            resize: vertical;
-            min-height: 60px;
+        .tick {
+            width: 17px; height: 17px; border-radius: 50%; flex-shrink: 0;
+            border: 1px solid var(--line-strong); display: grid; place-items: center;
+            font-size: .58rem; color: transparent;
         }
+        .nav button.filled .tick { background: var(--ok); border-color: var(--ok); color: #fff; }
 
-        select {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.5 1.5 4h9z' fill='%2371717a'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 2rem;
-        }
+        .sheet { display: none; }
+        .sheet.on { display: block; }
 
-        body.rtl select {
-            background-position: left 12px center;
-            padding-right: 0.9rem;
-            padding-left: 2rem;
-        }
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: .82rem; font-weight: 700; margin-bottom: 6px; color: var(--ink-soft); }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.9rem;
+        input, textarea, select {
+            width: 100%; padding: 11px 13px; font-family: inherit; font-size: .93rem;
+            border: 1px solid var(--line); border-radius: 10px;
+            background: var(--surface); color: var(--ink);
         }
-
-        /* ============ ITEM CARDS (Experience, Education, etc.) ============ */
-        .item-card {
-            background: rgba(30, 30, 42, 0.5);
-            border-radius: var(--radius-sm);
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            position: relative;
-            border: 1px solid var(--border-light);
-            transition: all 0.3s;
-            animation: cardSlideIn 0.35s ease-out;
+        input:focus, textarea:focus, select:focus {
+            outline: 0; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft);
         }
+        textarea { resize: vertical; line-height: 1.7; }
+        ::placeholder { color: var(--ink-faint); }
 
-        .item-card:hover {
-            border-color: var(--border);
-        }
+        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } }
 
-        @keyframes cardSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .item {
+            position: relative; padding: 18px; margin-bottom: 14px;
+            border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2);
         }
-
-        .remove-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 26px;
-            height: 26px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 50%;
-            color: var(--error);
-            font-size: 14px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            line-height: 1;
+        .item .kill {
+            position: absolute; inset-inline-end: 12px; top: 12px;
+            width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+            border: 1px solid var(--line-strong); background: var(--surface);
+            color: var(--ink-soft); font-size: .95rem; line-height: 1;
         }
+        .item .kill:hover { color: var(--danger); border-color: var(--danger); }
 
-        .remove-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: var(--error);
+        .add {
+            width: 100%; padding: 12px; cursor: pointer; border: 1px dashed var(--line-strong);
+            border-radius: 10px; background: transparent; font-family: inherit;
+            font-size: .88rem; font-weight: 600; color: var(--ink-soft);
         }
+        .add:hover { border-color: var(--brand); color: var(--brand); }
 
-        .item-card.removable .remove-btn {
-            display: flex;
-        }
+        /* ============ STEP 3 ============ */
 
-        body.rtl .remove-btn {
-            right: auto;
-            left: 8px;
-        }
+        .finish { display: grid; grid-template-columns: 300px 1fr; gap: 22px; align-items: start; }
+        @media (max-width: 980px) { .finish { grid-template-columns: 1fr; } }
 
-        /* ============ ADD BUTTON ============ */
-        .add-btn {
-            width: 100%;
-            padding: 0.7rem;
-            background: transparent;
-            border: 1.5px dashed var(--border);
-            border-radius: var(--radius-xs);
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-family: inherit;
-            transition: all 0.25s;
-        }
+        .tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        .add-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
+        .tpl {
+            cursor: pointer; padding: 10px; border-radius: 11px; text-align: center;
+            border: 1px solid var(--line); background: var(--surface);
         }
+        .tpl:hover { border-color: var(--line-strong); }
+        .tpl.on { border-color: var(--brand); background: var(--brand-soft); }
 
-        /* ============ SUBMIT BUTTON ============ */
-        .submit-section {
-            margin-top: 2rem;
+        /* A miniature of the page rather than a colour square: the old grid
+           showed nine coloured chips, which asked people to choose a layout
+           they had never seen. */
+        .tpl-mini {
+            height: 54px; border-radius: 6px; margin-bottom: 7px; background: #fff;
+            border: 1px solid var(--line); padding: 6px; overflow: hidden;
         }
+        .tpl-mini .bar { height: 4px; border-radius: 2px; margin-bottom: 3px; }
+        .tpl-mini .line { height: 2px; border-radius: 1px; background: #DADADA; margin-bottom: 3px; }
+        .tpl-name { font-size: .78rem; font-weight: 700; }
 
-        .submit-btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--gradient);
-            border: none;
-            border-radius: var(--radius-sm);
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.02em;
+        .preview-box {
+            position: sticky; top: 18px; border: 1px solid var(--line);
+            border-radius: 14px; overflow: hidden; background: var(--surface-2);
         }
+        .preview-box iframe { width: 100%; height: 640px; border: 0; display: block; background: #fff; }
+        .preview-empty { display: grid; place-items: center; height: 420px; color: var(--ink-faint); text-align: center; padding: 20px; }
 
-        .submit-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
+        .btn {
+            padding: 13px 24px; border-radius: 11px; border: 0; cursor: pointer;
+            font-family: inherit; font-size: .94rem; font-weight: 700;
+            background: var(--brand); color: #fff;
         }
+        .btn:hover { background: var(--brand-ink); }
+        .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
+        .btn.ghost:hover { border-color: var(--brand); color: var(--brand); }
+        .btn.sm { padding: 8px 15px; font-size: .84rem; }
+        .btn.block { width: 100%; }
 
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
-        }
+        .foot-nav { display: flex; gap: 10px; justify-content: space-between; margin-top: 24px; flex-wrap: wrap; }
 
-        .submit-btn:hover::before {
-            opacity: 1;
-        }
+        /* ============ TAILOR ============ */
 
-        .submit-btn:active {
-            transform: translateY(0);
+        .score {
+            width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0;
+            display: grid; place-items: center; font-size: 1.45rem; font-weight: 800;
         }
 
-        .submit-btn .btn-icon {
-            margin-right: 0.5rem;
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px; margin: 3px;
+            padding: 5px 11px; border-radius: 999px; font-size: .8rem; border: 1px solid transparent;
         }
+        .chip.yes { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+        .chip.no { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+        .chip.key { font-weight: 700; }
 
-        body.rtl .submit-btn .btn-icon {
-            margin-right: 0;
-            margin-left: 0.5rem;
-        }
+        .fix { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 11px; background: var(--surface); }
+        .fix-where { font-size: .74rem; color: var(--ink-faint); margin-bottom: 8px; }
+        .fix-old { font-size: .85rem; color: var(--ink-faint); text-decoration: line-through; margin-bottom: 6px; }
+        .fix-new { font-size: .92rem; font-weight: 600; }
 
-        /* ============ LOADING OVERLAY ============ */
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
+        /* Gaps that rewriting cannot close. Kept visually apart and given no
+           button, because the honest answer to "you do not have this" is
+           never "put it in anyway". */
+        .gaps { border: 1px solid var(--gold); background: var(--gold-soft); border-radius: 12px; padding: 16px; margin-top: 16px; }
+        .gaps b { color: var(--gold); }
 
-        .loading-overlay.show {
-            display: flex;
-        }
+        /* ============ CHROME ============ */
 
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .restore {
+            display: none; align-items: center; justify-content: space-between; gap: 12px;
+            flex-wrap: wrap; margin-bottom: 20px; padding: 13px 18px; border-radius: 12px;
+            background: var(--ok-soft); border: 1px solid var(--ok); font-size: .9rem;
         }
+        .restore.on { display: flex; }
 
-        .loading-text {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+        .overlay {
+            position: fixed; inset: 0; z-index: 90; display: none; place-items: center;
+            background: rgba(21, 32, 43, .55);
         }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .overlay.on { display: grid; }
+        .overlay-box { background: var(--surface); padding: 30px 40px; border-radius: 16px; text-align: center; }
+        .spin {
+            width: 34px; height: 34px; margin: 0 auto 14px; border-radius: 50%;
+            border: 3px solid var(--line); border-top-color: var(--brand);
+            animation: spin .8s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ============ TOAST NOTIFICATION ============ */
         .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--surface-solid);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0.85rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            font-size: 0.9rem;
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 10000;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
+            position: fixed; bottom: 26px; inset-inline-start: 50%; z-index: 95;
+            transform: translateX(50%) translateY(140%);
+            background: var(--ink); color: var(--paper); padding: 13px 22px;
+            border-radius: 11px; font-size: .9rem; transition: transform .3s; max-width: 90vw;
         }
+        .toast.on { transform: translateX(50%) translateY(0); }
 
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        /* The sample. The landing page used to open with an empty form and
+           ask for twenty-seven answers before showing anything at all. */
+        .sample { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: center; margin-top: 26px; }
+        @media (max-width: 820px) { .sample { grid-template-columns: 1fr; } }
+        .sample-paper {
+            border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+            background: #fff; height: 320px;
         }
+        .sample-paper iframe { width: 100%; height: 100%; border: 0; display: block; }
 
-        .toast-icon {
-            width: 28px;
-            height: 28px;
-            background: rgba(34, 197, 94, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
+        .pair {
+            display: flex; gap: 8px; align-items: center; justify-content: center;
+            margin-top: 10px; font-size: .78rem; color: var(--ink-faint);
         }
-
-        /* ============ FOOTER ============ */
-        .footer {
-            text-align: center;
-            margin-top: 2.5rem;
-            padding-bottom: 1rem;
-        }
-
-        .heart-icon {
-            display: inline-block;
-            color: #dc2626;
-            animation: heartbeat 1.5s ease-in-out infinite;
-        }
-
-        @keyframes heartbeat {
-
-            0%,
-            100% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.15);
-            }
-        }
-
-        /* ============ ANIMATIONS ============ */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ============ COLLAPSIBLE SECTIONS ============ */
-        .section-toggle {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .section-toggle .toggle-arrow {
-            font-size: 10px;
-            transition: transform 0.3s;
-            color: var(--text-muted);
-            margin-left: 4px;
-        }
-
-        body.rtl .section-toggle .toggle-arrow {
-            margin-left: 0;
-            margin-right: 4px;
-        }
-
-        .section-toggle.collapsed .toggle-arrow {
-            transform: rotate(-90deg);
-        }
-
-        body.rtl .section-toggle.collapsed .toggle-arrow {
-            transform: rotate(90deg);
-        }
-
-        .section-content {
-            overflow: hidden;
-            max-height: 2000px;
-            transition: max-height 0.5s ease, opacity 0.3s;
-            opacity: 1;
-        }
-
-        .section-content.collapsed {
-            max-height: 0;
-            opacity: 0;
-            margin-bottom: 0;
-        }
-
-        /* ============ RESPONSIVE ============ */
-        @media (max-width: 700px) {
-            .template-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 6px;
-            }
-
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-
-            body {
-                font-size: 0.92rem;
-            }
-
-            .main-card {
-                padding: 1.25rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .page-wrapper {
-                padding: 1rem 0.75rem 3rem;
-            }
-
-            .template-card {
-                padding: 0.75rem 0.5rem 0.5rem;
-            }
-
-            .template-swatch {
-                width: 28px;
-                height: 28px;
-                border-radius: 8px;
-                font-size: 12px;
-            }
-
-            .template-name {
-                font-size: 0.7rem;
-            }
-
-            .template-desc {
-                font-size: 0.6rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .template-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+        body.ltr .toast { transform: translateX(-50%) translateY(140%); }
+        body.ltr .toast.on { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 
 <body>
-    <!-- Background Effects -->
-    <div class="bg-effects">
-        <div class="bg-orb"></div>
-        <div class="bg-orb"></div>
-        <div class="bg-orb"></div>
+    <div class="wrap">
+
+        <div class="topbar">
+            <div class="brand">
+                <span class="brand-mark">📄</span>
+                <span data-ar="منشئ السيرة الذاتية" data-en="CV Generator">منشئ السيرة الذاتية</span>
+            </div>
+            <div class="topbar-actions">
+                <div class="seg">
+                    <button class="on" id="segAr" onclick="setLang('ar')">العربية</button>
+                    <button id="segEn" onclick="setLang('en')">English</button>
+                </div>
+                <button class="btn sm" onclick="goStep('tailor')" id="tailorTop"
+                    data-ar="🎯 فصّلها على وظيفة" data-en="🎯 Tailor to a job">🎯 فصّلها على وظيفة</button>
+                <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="تبديل الوضع الليلي">🌙</button>
+            </div>
+        </div>
+
+        <div class="restore" id="restore">
+            <span data-ar="وجدنا سيرة لم تُكمل." data-en="We found an unfinished CV.">وجدنا سيرة لم تُكمل.</span>
+            <span>
+                <button class="btn sm" onclick="restoreDraft()" data-ar="متابعة" data-en="Continue">متابعة</button>
+                <button class="btn sm ghost" onclick="discardDraft()" data-ar="ابدأ من جديد" data-en="Start fresh">ابدأ من جديد</button>
+            </span>
+        </div>
+
+        <div class="rail">
+            <button class="rail-step on" id="rail1" onclick="goStep(1)">
+                <span class="rail-num">1</span>
+                <span><span class="rail-label" data-ar="ابدأ" data-en="Start">ابدأ</span><br>
+                    <span class="rail-hint" data-ar="اختر طريقتك" data-en="Pick a way in">اختر طريقتك</span></span>
+            </button>
+            <button class="rail-step" id="rail2" onclick="goStep(2)">
+                <span class="rail-num">2</span>
+                <span><span class="rail-label" data-ar="محتواك" data-en="Your content">محتواك</span><br>
+                    <span class="rail-hint" data-ar="راجع وعدّل" data-en="Review and edit">راجع وعدّل</span></span>
+            </button>
+            <button class="rail-step" id="rail3" onclick="goStep(3)">
+                <span class="rail-num">3</span>
+                <span><span class="rail-label" data-ar="الشكل والتحميل" data-en="Look and download">الشكل والتحميل</span><br>
+                    <span class="rail-hint" data-ar="اختر القالب" data-en="Choose a template">اختر القالب</span></span>
+            </button>
+        </div>
+
+        <!-- ============ STEP 1 ============ -->
+        <section class="step on" id="step1">
+            <div class="card">
+                <h2 data-ar="كيف تريد أن نبدأ؟" data-en="How would you like to start?">كيف تريد أن نبدأ؟</h2>
+                <p class="lede"
+                    data-ar="اختر الأسهل لك — الثلاثة تنتهي إلى نفس الشيء: ملف PDF منسّق يمرّ أنظمة ATS."
+                    data-en="Pick whichever suits you — all three end in the same ATS-ready PDF.">
+                    اختر الأسهل لك — الثلاثة تنتهي إلى نفس الشيء: ملف PDF منسّق يمرّ أنظمة ATS.</p>
+
+                <div class="doors">
+                    <div class="door" id="doorVoice" onclick="openDoor('voice')">
+                        <div class="door-icon">🎙️</div>
+                        <div class="door-title" data-ar="احكِ عن نفسك" data-en="Just talk">احكِ عن نفسك</div>
+                        <div class="door-hint" data-ar="دقيقة ونصف، بلا كتابة" data-en="90 seconds, no typing">دقيقة ونصف، بلا كتابة</div>
+                    </div>
+                    <div class="door" id="doorFile" onclick="openDoor('file')">
+                        <div class="door-icon">📄</div>
+                        <div class="door-title" data-ar="ارفع سيرتك الحالية" data-en="Upload a CV">ارفع سيرتك الحالية</div>
+                        <div class="door-hint" data-ar="PDF أو Word" data-en="PDF or Word">PDF أو Word</div>
+                    </div>
+                    <div class="door" id="doorText" onclick="openDoor('text')">
+                        <div class="door-icon">✨</div>
+                        <div class="door-title" data-ar="الصقها من الذكاء الاصطناعي" data-en="Paste from AI">الصقها من الذكاء الاصطناعي</div>
+                        <div class="door-hint" data-ar="كلود، ChatGPT، Gemini" data-en="Claude, ChatGPT, Gemini">كلود، ChatGPT، Gemini</div>
+                    </div>
+                </div>
+
+                <div class="panel" id="panelVoice">
+                    <div class="rec-row">
+                        <button class="rec-btn" id="recBtn" onclick="toggleRec()">🎙️</button>
+                        <div>
+                            <div class="rec-time" id="recTime">0:00</div>
+                            <div style="font-size:.82rem;color:var(--ink-soft)" id="recState"
+                                data-ar="اضغط وابدأ الكلام" data-en="Tap and start talking">اضغط وابدأ الكلام</div>
+                        </div>
+                    </div>
+                    <p class="note"
+                        data-ar="قل اسمك، وظيفتك، أين عملت وكم سنة، ماذا كنت تفعل بالضبط، دراستك، ومهاراتك. تكلّم بلهجتك العادية. ملاحظة: نكتب ما تقوله فقط — إن لم تذكر تواريخ نتركها فارغة ولا نخمّنها."
+                        data-en="Say your name, your role, where you worked and for how long, what you actually did, your studies and your skills. We write only what you say — unstated dates are left empty, never guessed.">
+                        قل اسمك، وظيفتك، أين عملت وكم سنة، ماذا كنت تفعل بالضبط، دراستك، ومهاراتك. تكلّم بلهجتك
+                        العادية. ملاحظة: نكتب ما تقوله فقط — إن لم تذكر تواريخ نتركها فارغة ولا نخمّنها.</p>
+                </div>
+
+                <div class="panel" id="panelFile">
+                    <div class="drop" id="drop" onclick="document.getElementById('cvFile').click()">
+                        <div style="font-size:1.8rem">📄</div>
+                        <div style="font-weight:700;margin-top:8px"
+                            data-ar="اختر ملفاً أو اسحبه إلى هنا" data-en="Choose a file or drag it here">اختر ملفاً أو اسحبه إلى هنا</div>
+                        <div style="font-size:.82rem;color:var(--ink-faint);margin-top:4px"
+                            data-ar="نقرأ سيرتك ونملأ الحقول، ثم تعدّل ما تشاء"
+                            data-en="We read it, fill the fields, and you edit from there">نقرأ سيرتك ونملأ الحقول، ثم تعدّل ما تشاء</div>
+                    </div>
+                    <input type="file" id="cvFile" accept=".pdf,.docx" style="display:none" onchange="uploadCV(this.files[0])">
+                </div>
+
+                <div class="panel" id="panelText">
+                    <div class="field">
+                        <label data-ar="الصق سيرتك أو أي نص يصف خبرتك"
+                            data-en="Paste your CV, or any text describing your experience">الصق سيرتك أو أي نص يصف خبرتك</label>
+                        <textarea id="pasteBox" rows="8"
+                            data-ph-ar="اطلب من كلود أو ChatGPT أن يكتب سيرتك، ثم الصق الناتج هنا كما هو..."
+                            data-ph-en="Ask Claude or ChatGPT to write your CV, then paste the result here as it is..."
+                            placeholder="اطلب من كلود أو ChatGPT أن يكتب سيرتك، ثم الصق الناتج هنا كما هو..."></textarea>
+                    </div>
+                    <button class="btn" onclick="importText()" data-ar="حوّلها إلى سيرة" data-en="Turn it into a CV">حوّلها إلى سيرة</button>
+                </div>
+
+                <button class="manual-link" onclick="goStep(2)"
+                    data-ar="✍️ أو املأ النموذج بنفسي" data-en="✍️ Or fill the form myself">✍️ أو املأ النموذج بنفسي</button>
+
+                <p class="note"
+                    data-ar="نستخدم الذكاء الاصطناعي لترتيب ما تعطيه فقط — لا نضيف خبرات أو تواريخ أو شهادات لم تذكرها."
+                    data-en="AI only arranges what you give it. It never adds experience, dates or qualifications you did not state.">
+                    نستخدم الذكاء الاصطناعي لترتيب ما تعطيه فقط — لا نضيف خبرات أو تواريخ أو شهادات لم تذكرها.</p>
+            </div>
+
+            <div class="card" style="margin-top:20px">
+                <div class="sample">
+                    <div>
+                        <h2 style="font-size:1.12rem"
+                            data-ar="هذا ما ستحصل عليه" data-en="This is what you get">هذا ما ستحصل عليه</h2>
+                        <p class="lede"
+                            data-ar="ملف PDF حقيقي بخط عربي متصل وترتيب تقرؤه أنظمة الفرز. معظم المواقع تخرج العربية بحروف مقطّعة ومعكوسة — وهو ما يجعل الفلتر يتجاهل سيرتك قبل أن يراها إنسان."
+                            data-en="A real PDF with properly joined Arabic and a layout filters can read. Most tools emit Arabic with the letters disconnected and reversed, which is how a CV gets dropped before a person sees it.">
+                            ملف PDF حقيقي بخط عربي متصل وترتيب تقرؤه أنظمة الفرز.</p>
+                        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                            <span class="chip yes">✓ <span data-ar="عربي وإنجليزي" data-en="Arabic and English">عربي وإنجليزي</span></span>
+                            <span class="chip yes">✓ <span data-ar="9 قوالب" data-en="9 templates">9 قوالب</span></span>
+                            <span class="chip yes">✓ <span data-ar="مجاني" data-en="Free">مجاني</span></span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="sample-paper">
+                            <iframe src="/sample#toolbar=0&navpanes=0&view=FitH" loading="lazy"
+                                title="نموذج سيرة ذاتية"></iframe>
+                        </div>
+                        <div class="pair" data-ar="نموذج حقيقي مولّد بالأداة نفسها"
+                            data-en="A real sample, made by this tool">نموذج حقيقي مولّد بالأداة نفسها</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ STEP 2 ============ -->
+        <section class="step" id="step2">
+            <div class="editor">
+                <nav class="nav" id="navList"></nav>
+
+                <div class="card">
+                    <div class="sheet on" data-sheet="basics">
+                        <h2 data-ar="المعلومات الأساسية" data-en="Basics">المعلومات الأساسية</h2>
+                        <p class="lede" data-ar="ما يراه صاحب العمل أولاً." data-en="The first thing a recruiter reads.">ما يراه صاحب العمل أولاً.</p>
+                        <div style="margin-top:20px">
+                            <div class="field">
+                                <label data-ar="الاسم الكامل" data-en="Full name">الاسم الكامل</label>
+                                <input id="fullName" data-ph-ar="الاسم الكامل" data-ph-en="John Doe" placeholder="الاسم الكامل">
+                            </div>
+                            <div class="row2">
+                                <div class="field">
+                                    <label data-ar="المسمى الوظيفي" data-en="Job title">المسمى الوظيفي</label>
+                                    <input id="jobTitle" data-ph-ar="مهندس برمجيات" data-ph-en="Software Engineer" placeholder="مهندس برمجيات">
+                                </div>
+                                <div class="field">
+                                    <label data-ar="البريد الإلكتروني" data-en="Email">البريد الإلكتروني</label>
+                                    <input id="email" type="email" data-ph-ar="name@example.com" data-ph-en="name@example.com" placeholder="name@example.com">
+                                </div>
+                            </div>
+                            <div class="row2">
+                                <div class="field">
+                                    <label data-ar="رقم الجوال" data-en="Phone">رقم الجوال</label>
+                                    <input id="phone" data-ph-ar="0790000000" data-ph-en="+1 555 0100" placeholder="0790000000">
+                                </div>
+                                <div class="field">
+                                    <label data-ar="المدينة" data-en="Location">المدينة</label>
+                                    <input id="location" data-ph-ar="عمّان، الأردن" data-ph-en="Amman, Jordan" placeholder="عمّان، الأردن">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label data-ar="لينكدإن (اختياري)" data-en="LinkedIn (optional)">لينكدإن (اختياري)</label>
+                                <input id="linkedin" data-ph-ar="linkedin.com/in/username" data-ph-en="linkedin.com/in/username" placeholder="linkedin.com/in/username">
+                            </div>
+                            <div class="field">
+                                <label data-ar="الملخص المهني" data-en="Professional summary">الملخص المهني</label>
+                                <textarea id="summary" rows="4"
+                                    data-ph-ar="سطران أو ثلاثة: من أنت مهنياً، وأبرز ما أنجزته."
+                                    data-ph-en="Two or three lines: who you are professionally, and your strongest results."
+                                    placeholder="سطران أو ثلاثة: من أنت مهنياً، وأبرز ما أنجزته."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="exp">
+                        <h2 data-ar="الخبرات العملية" data-en="Experience">الخبرات العملية</h2>
+                        <p class="lede" data-ar="الأحدث أولاً. اكتب ما أنجزته لا ما كُلّفت به."
+                            data-en="Newest first. Write what you achieved, not what you were assigned.">الأحدث أولاً. اكتب ما أنجزته لا ما كُلّفت به.</p>
+                        <div style="margin-top:20px">
+                            <div id="experiences"></div>
+                            <button class="add" onclick="addExp()" data-ar="+ إضافة خبرة" data-en="+ Add experience">+ إضافة خبرة</button>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="edu">
+                        <h2 data-ar="التعليم" data-en="Education">التعليم</h2>
+                        <div style="margin-top:20px">
+                            <div id="education"></div>
+                            <button class="add" onclick="addEdu()" data-ar="+ إضافة مؤهل" data-en="+ Add education">+ إضافة مؤهل</button>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="skills">
+                        <h2 data-ar="المهارات" data-en="Skills">المهارات</h2>
+                        <p class="lede" data-ar="افصل بينها بفاصلة، واستخدم المسميات التي تظهر في الإعلانات الوظيفية."
+                            data-en="Comma separated. Use the names that appear in job adverts.">افصل بينها بفاصلة، واستخدم المسميات التي تظهر في الإعلانات الوظيفية.</p>
+                        <div class="field" style="margin-top:20px">
+                            <textarea id="skills" rows="4"
+                                data-ph-ar="Python، إدارة المشاريع، تحليل البيانات، التفاوض"
+                                data-ph-en="Python, Project management, Data analysis, Negotiation"
+                                placeholder="Python، إدارة المشاريع، تحليل البيانات، التفاوض"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="certs">
+                        <h2 data-ar="الشهادات" data-en="Certifications">الشهادات</h2>
+                        <div style="margin-top:20px">
+                            <div id="certifications"></div>
+                            <button class="add" onclick="addCert()" data-ar="+ إضافة شهادة" data-en="+ Add certification">+ إضافة شهادة</button>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="langs">
+                        <h2 data-ar="اللغات" data-en="Languages">اللغات</h2>
+                        <div style="margin-top:20px">
+                            <div id="languages"></div>
+                            <button class="add" onclick="addLang()" data-ar="+ إضافة لغة" data-en="+ Add language">+ إضافة لغة</button>
+                        </div>
+                    </div>
+
+                    <div class="sheet" data-sheet="proj">
+                        <h2 data-ar="المشاريع" data-en="Projects">المشاريع</h2>
+                        <div style="margin-top:20px">
+                            <div id="projects"></div>
+                            <button class="add" onclick="addProject()" data-ar="+ إضافة مشروع" data-en="+ Add project">+ إضافة مشروع</button>
+                        </div>
+                    </div>
+
+                    <div class="foot-nav">
+                        <button class="btn ghost" onclick="goStep(1)" data-ar="رجوع" data-en="Back">رجوع</button>
+                        <button class="btn" onclick="goStep(3)" data-ar="التالي: الشكل والتحميل"
+                            data-en="Next: look and download">التالي: الشكل والتحميل</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ STEP 3 ============ -->
+        <section class="step" id="step3">
+            <div class="finish">
+                <div>
+                    <div class="card" style="padding:20px">
+                        <h2 style="font-size:1.08rem" data-ar="اختر الشكل" data-en="Choose a look">اختر الشكل</h2>
+                        <p class="lede" style="font-size:.84rem" data-ar="المعاينة تتحدّث فوراً."
+                            data-en="The preview updates as you pick.">المعاينة تتحدّث فوراً.</p>
+                        <div class="tpl-grid" id="tplGrid" style="margin-top:16px"></div>
+                        <input type="hidden" id="template" value="classic">
+                        <input type="hidden" id="language" value="ar">
+
+                        <button class="btn block" style="margin-top:18px" onclick="generate()"
+                            data-ar="تحميل السيرة PDF" data-en="Download PDF">تحميل السيرة PDF</button>
+                        <button class="btn ghost block" style="margin-top:10px" onclick="downloadBoth()"
+                            data-ar="⬇ حمّل النسختين: عربي + إنجليزي"
+                            data-en="⬇ Download both: Arabic + English">⬇ حمّل النسختين: عربي + إنجليزي</button>
+                        <p class="note" style="margin-top:8px;text-align:center"
+                            data-ar="نترجم المحتوى ونخرج ملفين — الخبرات والتواريخ كما هي."
+                            data-en="We translate the prose and emit two files; history and dates stay as they are.">
+                            نترجم المحتوى ونخرج ملفين — الخبرات والتواريخ كما هي.</p>
+                        <button class="btn ghost block" style="margin-top:10px" onclick="goStep(2)"
+                            data-ar="رجوع للتعديل" data-en="Back to editing">رجوع للتعديل</button>
+                    </div>
+
+                    <div class="card" style="padding:20px;margin-top:18px">
+                        <h2 style="font-size:1.02rem">🎯 <span data-ar="فصّلها على وظيفة" data-en="Tailor to a job">فصّلها على وظيفة</span></h2>
+                        <p class="lede" style="font-size:.84rem"
+                            data-ar="سيرة واحدة لا تناسب كل إعلان. الصق الإعلان ونقول لك ما ينقص."
+                            data-en="One CV does not fit every advert. Paste one and see what is missing.">
+                            سيرة واحدة لا تناسب كل إعلان. الصق الإعلان ونقول لك ما ينقص.</p>
+                        <button class="btn ghost block" style="margin-top:14px" onclick="goStep('tailor')"
+                            data-ar="افتح الفحص" data-en="Open the check">افتح الفحص</button>
+                    </div>
+                </div>
+
+                <div class="preview-box" id="previewBox">
+                    <div class="preview-empty" id="previewEmpty">
+                        <div>
+                            <div style="font-size:1.9rem">👀</div>
+                            <p style="margin-top:10px" data-ar="املأ بعض الحقول لتظهر المعاينة"
+                                data-en="Fill in a few fields and the preview appears">املأ بعض الحقول لتظهر المعاينة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ TAILOR ============ -->
+        <section class="step" id="stepTailor">
+            <div class="card">
+                <h2 data-ar="فصّل سيرتك على هذه الوظيفة" data-en="Tailor your CV to this job">فصّل سيرتك على هذه الوظيفة</h2>
+                <p class="lede"
+                    data-ar="الصق نص الإعلان كاملاً. نُخرج ما يطلبه صاحب العمل، وهل سيرتك تُظهره، وكيف تعيد صياغتها."
+                    data-en="Paste the whole advert. We list what it asks for, whether your CV shows it, and how to reword.">
+                    الصق نص الإعلان كاملاً.</p>
+
+                <!-- Shown only when there is nothing to compare against, so
+                     someone arriving straight from the top bar is not told to
+                     go and find the form first. -->
+                <div id="tailorNoCv" style="display:none;margin-top:20px">
+                    <div class="drop" onclick="document.getElementById('tailorFile').click()">
+                        <div style="font-size:1.8rem">📄</div>
+                        <div style="font-weight:700;margin-top:8px"
+                            data-ar="ارفع سيرتك الحالية أولاً" data-en="Upload your current CV first">ارفع سيرتك الحالية أولاً</div>
+                        <div style="font-size:.82rem;color:var(--ink-faint);margin-top:4px"
+                            data-ar="PDF أو Word — أو املأ النموذج يدوياً"
+                            data-en="PDF or Word, or fill the form manually">PDF أو Word — أو املأ النموذج يدوياً</div>
+                    </div>
+                    <input type="file" id="tailorFile" accept=".pdf,.docx" style="display:none"
+                        onchange="uploadCV(this.files[0], 'tailor')">
+                    <button class="btn ghost block" style="margin-top:10px" onclick="goStep(2)"
+                        data-ar="أو املأ النموذج يدوياً" data-en="Or fill the form manually">أو املأ النموذج يدوياً</button>
+                </div>
+
+                <div id="tailorReady">
+                    <div class="field" style="margin-top:20px">
+                        <label data-ar="نص الإعلان الوظيفي" data-en="The job advert">نص الإعلان الوظيفي</label>
+                        <textarea id="jobText" rows="7"
+                            data-ph-ar="الصق هنا نص الإعلان الوظيفي كاملاً..."
+                            data-ph-en="Paste the full job advert here..."
+                            placeholder="الصق هنا نص الإعلان الوظيفي كاملاً..."></textarea>
+                    </div>
+
+                    <div style="display:flex;gap:10px;flex-wrap:wrap">
+                        <button class="btn" onclick="matchJob()" data-ar="افحص التطابق" data-en="Check the match">افحص التطابق</button>
+                        <button class="btn ghost" onclick="goStep(3)" data-ar="رجوع" data-en="Back">رجوع</button>
+                    </div>
+                </div>
+
+                <div id="matchOut" style="margin-top:26px"></div>
+            </div>
+        </section>
+
     </div>
 
-    <div class="page-wrapper">
-        <div class="container">
-            <!-- Header -->
-            <div class="header">
-                <div class="logo-icon">📄</div>
-                <h1 id="title">CV Generator</h1>
-                <p class="subtitle" id="subtitle">Create ATS-Friendly Professional Resumes</p>
-            </div>
-
-            <!-- Language Toggle -->
-            <div class="lang-toggle">
-                <button class="lang-btn active" onclick="setLang('en')" id="btnEn">English</button>
-                <button class="lang-btn" onclick="setLang('ar')" id="btnAr">العربية</button>
-            </div>
-
-            <!-- Main Form Card -->
-            <div class="main-card">
-                <input type="hidden" id="language" value="en">
-
-                <!-- ========== TEMPLATE SELECTOR ========== -->
-                <div class="section-header">
-                    <div class="section-icon">🎨</div>
-                    <div class="section-title" data-en="Choose Template" data-ar="اختر القالب">Choose Template</div>
-                    <div class="section-line"></div>
-                </div>
-
-                <div class="template-grid" id="templateGrid">
-                    <!-- Templates injected by JS -->
-                </div>
-                <input type="hidden" id="template" value="classic">
-
-                <!-- ========== PERSONAL INFO ========== -->
-                <div class="section-header">
-                    <div class="section-icon">👤</div>
-                    <div class="section-title" data-en="Personal Information" data-ar="المعلومات الشخصية">Personal
-                        Information</div>
-                    <div class="section-line"></div>
-                </div>
-
-                <div class="form-group">
-                    <label data-en="Full Name" data-ar="الاسم الكامل">Full Name</label>
-                    <input type="text" id="fullName" data-ph-en="John Doe" data-ph-ar="الاسم الكامل"
-                        placeholder="John Doe">
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</label>
-                        <input type="text" id="jobTitle" data-ph-en="Software Engineer" data-ph-ar="مهندس برمجيات"
-                            placeholder="Software Engineer">
-                    </div>
-                    <div class="form-group">
-                        <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
-                        <input type="email" id="email" placeholder="email@example.com">
-                    </div>
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label data-en="Phone" data-ar="الهاتف">Phone</label>
-                        <input type="tel" id="phone" data-ph-en="+1 234 567 890" data-ph-ar="+966 50 000 0000"
-                            placeholder="+1 234 567 890">
-                    </div>
-                    <div class="form-group">
-                        <label data-en="Location" data-ar="الموقع">Location</label>
-                        <input type="text" id="location" data-ph-en="New York, USA" data-ph-ar="الرياض، السعودية"
-                            placeholder="New York, USA">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-en="LinkedIn" data-ar="لينكدإن">LinkedIn</label>
-                    <input type="text" id="linkedin" placeholder="linkedin.com/in/username">
-                </div>
-                <div class="form-group">
-                    <label data-en="Professional Summary" data-ar="الملخص المهني">Professional Summary</label>
-                    <textarea id="summary" rows="3"
-                        data-ph-en="Brief overview of your career goals and qualifications..."
-                        data-ph-ar="نبذة مختصرة عن مسيرتك المهنية..."
-                        placeholder="Brief overview of your career goals and qualifications..."></textarea>
-                </div>
-
-                <!-- ========== EXPERIENCE ========== -->
-                <div class="section-header section-toggle" onclick="toggleSection(this)">
-                    <div class="section-icon">💼</div>
-                    <div class="section-title" data-en="Experience" data-ar="الخبرة العملية">Experience</div>
-                    <span class="toggle-arrow">▼</span>
-                    <div class="section-line"></div>
-                </div>
-                <div class="section-content">
-                    <div id="experiences"></div>
-                    <button class="add-btn" onclick="addExp()" data-en="+ Add Experience" data-ar="+ إضافة خبرة">+ Add
-                        Experience</button>
-                </div>
-
-                <!-- ========== EDUCATION ========== -->
-                <div class="section-header section-toggle" onclick="toggleSection(this)">
-                    <div class="section-icon">🎓</div>
-                    <div class="section-title" data-en="Education" data-ar="التعليم">Education</div>
-                    <span class="toggle-arrow">▼</span>
-                    <div class="section-line"></div>
-                </div>
-                <div class="section-content">
-                    <div id="education"></div>
-                    <button class="add-btn" onclick="addEdu()" data-en="+ Add Education" data-ar="+ إضافة تعليم">+ Add
-                        Education</button>
-                </div>
-
-                <!-- ========== SKILLS ========== -->
-                <div class="section-header">
-                    <div class="section-icon">⚡</div>
-                    <div class="section-title" data-en="Skills" data-ar="المهارات">Skills</div>
-                    <div class="section-line"></div>
-                </div>
-                <div class="form-group">
-                    <textarea id="skills" rows="2" data-ph-en="Python, JavaScript, React, Project Management..."
-                        data-ph-ar="Python, JavaScript, React, إدارة المشاريع..."
-                        placeholder="Python, JavaScript, React, Project Management..."></textarea>
-                </div>
-
-                <!-- ========== CERTIFICATIONS ========== -->
-                <div class="section-header section-toggle" onclick="toggleSection(this)">
-                    <div class="section-icon">🏆</div>
-                    <div class="section-title" data-en="Certifications" data-ar="الشهادات">Certifications</div>
-                    <span class="toggle-arrow">▼</span>
-                    <div class="section-line"></div>
-                </div>
-                <div class="section-content">
-                    <div id="certifications"></div>
-                    <button class="add-btn" onclick="addCert()" data-en="+ Add Certification" data-ar="+ إضافة شهادة">+
-                        Add Certification</button>
-                </div>
-
-                <!-- ========== LANGUAGES ========== -->
-                <div class="section-header section-toggle" onclick="toggleSection(this)">
-                    <div class="section-icon">🌍</div>
-                    <div class="section-title" data-en="Languages" data-ar="اللغات">Languages</div>
-                    <span class="toggle-arrow">▼</span>
-                    <div class="section-line"></div>
-                </div>
-                <div class="section-content">
-                    <div id="languages"></div>
-                    <button class="add-btn" onclick="addLang()" data-en="+ Add Language" data-ar="+ إضافة لغة">+ Add
-                        Language</button>
-                </div>
-
-                <!-- ========== PROJECTS ========== -->
-                <div class="section-header section-toggle" onclick="toggleSection(this)">
-                    <div class="section-icon">🚀</div>
-                    <div class="section-title" data-en="Projects" data-ar="المشاريع">Projects</div>
-                    <span class="toggle-arrow">▼</span>
-                    <div class="section-line"></div>
-                </div>
-                <div class="section-content">
-                    <div id="projects"></div>
-                    <button class="add-btn" onclick="addProject()" data-en="+ Add Project" data-ar="+ إضافة مشروع">+ Add
-                        Project</button>
-                </div>
-
-                <!-- ========== GENERATE BUTTON ========== -->
-                <div class="submit-section">
-                    <button class="submit-btn" onclick="generate()" id="generateBtn" data-en="📥  Generate CV"
-                        data-ar="📥  إنشاء السيرة الذاتية">
-                        <span class="btn-icon">📥</span> Generate CV
-                    </button>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-                <span class="heart-icon">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="#dc2626">
-                        <path
-                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                </span>
-            </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-box">
+            <div class="spin"></div>
+            <div id="overlayText">جارٍ العمل...</div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading">
-        <div class="loader"></div>
-        <div class="loading-text" id="loadingText">Generating your CV...</div>
-    </div>
+    <div class="toast" id="toast"></div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast">
-        <div class="toast-icon">✓</div>
-        <span id="toastText">CV downloaded successfully!</span>
-    </div>
-
-    <script>
-        let expCount = 0, eduCount = 0, certCount = 0, langCount = 0, projCount = 0;
-        let currentLang = 'en';
-        let selectedTemplate = 'classic';
-
-        // Template data
-        const templateData = {
-            classic: { en: 'Classic', ar: 'كلاسيكي', desc_en: 'Black & White', desc_ar: 'أبيض وأسود', color: '#000000', icon: '📋' },
-            modern: { en: 'Modern', ar: 'عصري', desc_en: 'Blue Theme', desc_ar: 'أزرق', color: '#2563eb', icon: '🔷' },
-            minimal: { en: 'Minimal', ar: 'بسيط', desc_en: 'Green Theme', desc_ar: 'أخضر', color: '#059669', icon: '🍃' },
-            executive: { en: 'Executive', ar: 'تنفيذي', desc_en: 'Purple Header', desc_ar: 'رأس بنفسجي', color: '#7c3aed', icon: '👔' },
-            compact: { en: 'Compact', ar: 'مضغوط', desc_en: 'Orange Accent', desc_ar: 'برتقالي', color: '#ea580c', icon: '📐' },
-            professional: { en: 'Professional', ar: 'احترافي', desc_en: 'Navy Sidebar', desc_ar: 'شريط بحري', color: '#1e3a5f', icon: '🏢' },
-            creative: { en: 'Creative', ar: 'إبداعي', desc_en: 'Teal & Coral', desc_ar: 'أزرق مخضر', color: '#0d9488', icon: '🎨' },
-            diamond: { en: 'Diamond', ar: 'الماسي', desc_en: 'Gold Elegant', desc_ar: 'ذهبي أنيق', color: '#d4a843', icon: '💎' },
-            tech: { en: 'Tech', ar: 'تقني', desc_en: 'Cyan Digital', desc_ar: 'رقمي سماوي', color: '#06b6d4', icon: '💻' },
-        };
-
-        // Labels for dynamic fields
-        const labels = {
-            en: {
-                title: 'Title', company: 'Company', start: 'Start', end: 'End', description: 'Description',
-                degree: 'Degree', school: 'School / University', field: 'Field of Study', year: 'Year',
-                certName: 'Certification Name', certIssuer: 'Issuing Organization', certYear: 'Year',
-                langName: 'Language', langLevel: 'Proficiency Level',
-                projName: 'Project Name', projDesc: 'Description', projLink: 'Link (optional)',
-                phTitle: 'Senior Developer', phCompany: 'Google Inc.', phStart: '2020', phEnd: 'Present', phDesc: 'Led development of...',
-                phDegree: 'BSc Computer Science', phSchool: 'MIT', phField: 'Computer Science',
-                phCertName: 'AWS Certified', phCertIssuer: 'Amazon', phCertYear: '2023',
-                phLangName: 'English', phLangLevel: 'Native',
-                phProjName: 'E-Commerce Platform', phProjDesc: 'Built a full-stack...', phProjLink: 'https://github.com/...'
-            },
-            ar: {
-                title: 'المسمى الوظيفي', company: 'الشركة', start: 'من', end: 'إلى', description: 'الوصف',
-                degree: 'الدرجة العلمية', school: 'الجامعة / المدرسة', field: 'التخصص', year: 'السنة',
-                certName: 'اسم الشهادة', certIssuer: 'الجهة المانحة', certYear: 'السنة',
-                langName: 'اللغة', langLevel: 'مستوى الإتقان',
-                projName: 'اسم المشروع', projDesc: 'الوصف', projLink: 'الرابط (اختياري)',
-                phTitle: 'مطور أول', phCompany: 'شركة التقنية', phStart: '2020', phEnd: 'الآن', phDesc: 'قيادة تطوير...',
-                phDegree: 'بكالوريوس', phSchool: 'جامعة الملك سعود', phField: 'علوم الحاسب',
-                phCertName: 'شهادة AWS', phCertIssuer: 'أمازون', phCertYear: '2023',
-                phLangName: 'العربية', phLangLevel: 'اللغة الأم',
-                phProjName: 'منصة تجارة إلكترونية', phProjDesc: 'بناء منصة متكاملة...', phProjLink: 'https://github.com/...'
-            }
-        };
-
-        // ============ TEMPLATE SELECTOR SETUP ============
-        function buildTemplateGrid() {
-            const grid = document.getElementById('templateGrid');
-            grid.innerHTML = '';
-            for (const [key, tmpl] of Object.entries(templateData)) {
-                const isSelected = key === selectedTemplate;
-                const name = currentLang === 'ar' ? tmpl.ar : tmpl.en;
-                const desc = currentLang === 'ar' ? tmpl.desc_ar : tmpl.desc_en;
-                grid.innerHTML += `
-                    <div class="template-card ${isSelected ? 'selected' : ''}" 
-                         style="--card-color: ${tmpl.color};" 
-                         onclick="selectTemplate('${key}')" 
-                         data-template="${key}">
-                        <div class="check-mark">✓</div>
-                        <div class="template-swatch" style="background: ${tmpl.color};">${tmpl.icon}</div>
-                        <div class="template-name">${name}</div>
-                        <div class="template-desc">${desc}</div>
-                    </div>
-                `;
-            }
-        }
-
-        function selectTemplate(key) {
-            selectedTemplate = key;
-            document.getElementById('template').value = key;
-            document.querySelectorAll('.template-card').forEach(card => {
-                card.classList.toggle('selected', card.dataset.template === key);
-            });
-        }
-
-        // ============ LANGUAGE ============
-        function setLang(l) {
-            currentLang = l;
-            document.getElementById('language').value = l;
-            document.body.classList.toggle('rtl', l === 'ar');
-            document.getElementById('btnEn').classList.toggle('active', l === 'en');
-            document.getElementById('btnAr').classList.toggle('active', l === 'ar');
-            document.getElementById('title').textContent = l === 'ar' ? 'منشئ السيرة الذاتية' : 'CV Generator';
-            document.getElementById('subtitle').textContent = l === 'ar' ? 'أنشئ سيرة ذاتية احترافية متوافقة مع ATS' : 'Create ATS-Friendly Professional Resumes';
-            document.getElementById('loadingText').textContent = l === 'ar' ? 'جاري إنشاء السيرة الذاتية...' : 'Generating your CV...';
-
-            // Update static labels
-            document.querySelectorAll('[data-' + l + ']').forEach(el => {
-                if (el.tagName === 'BUTTON' && el.querySelector('.btn-icon')) {
-                    el.innerHTML = '<span class="btn-icon">📥</span> ' + el.getAttribute('data-' + l);
-                } else {
-                    el.textContent = el.getAttribute('data-' + l);
-                }
-            });
-            document.querySelectorAll('[data-ph-' + l + ']').forEach(el => {
-                el.placeholder = el.getAttribute('data-ph-' + l);
-            });
-
-            buildTemplateGrid();
-            updateDynamicLabels();
-        }
-
-        function updateDynamicLabels() {
-            const lb = labels[currentLang];
-            // Experience 
-            document.querySelectorAll('.item-card[id^="exp"] label[data-field]').forEach(lbl => {
-                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
-            });
-            document.querySelectorAll('.item-card[id^="exp"] input[data-ph-field], .item-card[id^="exp"] textarea[data-ph-field]').forEach(inp => {
-                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
-            });
-            // Education
-            document.querySelectorAll('.item-card[id^="edu"] label[data-field]').forEach(lbl => {
-                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
-            });
-            document.querySelectorAll('.item-card[id^="edu"] input[data-ph-field]').forEach(inp => {
-                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
-            });
-            // Certifications
-            document.querySelectorAll('.item-card[id^="cert"] label[data-field]').forEach(lbl => {
-                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
-            });
-            document.querySelectorAll('.item-card[id^="cert"] input[data-ph-field]').forEach(inp => {
-                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
-            });
-            // Languages
-            document.querySelectorAll('.item-card[id^="lng"] label[data-field]').forEach(lbl => {
-                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
-            });
-            document.querySelectorAll('.item-card[id^="lng"] input[data-ph-field]').forEach(inp => {
-                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
-            });
-            // Projects
-            document.querySelectorAll('.item-card[id^="proj"] label[data-field]').forEach(lbl => {
-                lbl.textContent = lb[lbl.getAttribute('data-field')] || '';
-            });
-            document.querySelectorAll('.item-card[id^="proj"] input[data-ph-field], .item-card[id^="proj"] textarea[data-ph-field]').forEach(inp => {
-                inp.placeholder = lb[inp.getAttribute('data-ph-field')] || '';
-            });
-        }
-
-        // ============ SECTION TOGGLE ============
-        function toggleSection(header) {
-            header.classList.toggle('collapsed');
-            const content = header.nextElementSibling;
-            if (content) content.classList.toggle('collapsed');
-        }
-
-        // ============ ADD EXPERIENCE ============
-        function addExp(isFirst = false) {
-            expCount++;
-            const lb = labels[currentLang];
-            const removableClass = isFirst ? '' : 'removable';
-            document.getElementById('experiences').insertAdjacentHTML('beforeend', `
-                <div class="item-card ${removableClass}" id="exp${expCount}">
-                    <button class="remove-btn" onclick="document.getElementById('exp${expCount}').remove()">×</button>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="title">${lb.title}</label>
-                            <input type="text" class="exp-title" data-ph-field="phTitle" placeholder="${lb.phTitle}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="company">${lb.company}</label>
-                            <input type="text" class="exp-company" data-ph-field="phCompany" placeholder="${lb.phCompany}">
-                        </div>
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="start">${lb.start}</label>
-                            <input type="text" class="exp-start" data-ph-field="phStart" placeholder="${lb.phStart}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="end">${lb.end}</label>
-                            <input type="text" class="exp-end" data-ph-field="phEnd" placeholder="${lb.phEnd}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label data-field="description">${lb.description}</label>
-                        <textarea class="exp-desc" rows="2" data-ph-field="phDesc" placeholder="${lb.phDesc}"></textarea>
-                    </div>
-                </div>
-            `);
-        }
-
-        // ============ ADD EDUCATION ============
-        function addEdu(isFirst = false) {
-            eduCount++;
-            const lb = labels[currentLang];
-            const removableClass = isFirst ? '' : 'removable';
-            document.getElementById('education').insertAdjacentHTML('beforeend', `
-                <div class="item-card ${removableClass}" id="edu${eduCount}">
-                    <button class="remove-btn" onclick="document.getElementById('edu${eduCount}').remove()">×</button>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="degree">${lb.degree}</label>
-                            <input type="text" class="edu-degree" data-ph-field="phDegree" placeholder="${lb.phDegree}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="school">${lb.school}</label>
-                            <input type="text" class="edu-school" data-ph-field="phSchool" placeholder="${lb.phSchool}">
-                        </div>
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="field">${lb.field}</label>
-                            <input type="text" class="edu-field" data-ph-field="phField" placeholder="${lb.phField}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="year">${lb.year}</label>
-                            <input type="text" class="edu-year" placeholder="2020">
-                        </div>
-                    </div>
-                </div>
-            `);
-        }
-
-        // ============ ADD CERTIFICATION ============
-        function addCert(isFirst = false) {
-            certCount++;
-            const lb = labels[currentLang];
-            const removableClass = isFirst ? '' : 'removable';
-            document.getElementById('certifications').insertAdjacentHTML('beforeend', `
-                <div class="item-card ${removableClass}" id="cert${certCount}">
-                    <button class="remove-btn" onclick="document.getElementById('cert${certCount}').remove()">×</button>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="certName">${lb.certName}</label>
-                            <input type="text" class="cert-name" data-ph-field="phCertName" placeholder="${lb.phCertName}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="certIssuer">${lb.certIssuer}</label>
-                            <input type="text" class="cert-issuer" data-ph-field="phCertIssuer" placeholder="${lb.phCertIssuer}">
-                        </div>
-                    </div>
-                    <div class="form-group" style="max-width:50%">
-                        <label data-field="certYear">${lb.certYear}</label>
-                        <input type="text" class="cert-year" data-ph-field="phCertYear" placeholder="${lb.phCertYear}">
-                    </div>
-                </div>
-            `);
-        }
-
-        // ============ ADD LANGUAGE ============
-        function addLang(isFirst = false) {
-            langCount++;
-            const lb = labels[currentLang];
-            const removableClass = isFirst ? '' : 'removable';
-            document.getElementById('languages').insertAdjacentHTML('beforeend', `
-                <div class="item-card ${removableClass}" id="lng${langCount}">
-                    <button class="remove-btn" onclick="document.getElementById('lng${langCount}').remove()">×</button>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="langName">${lb.langName}</label>
-                            <input type="text" class="lng-name" data-ph-field="phLangName" placeholder="${lb.phLangName}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="langLevel">${lb.langLevel}</label>
-                            <input type="text" class="lng-level" data-ph-field="phLangLevel" placeholder="${lb.phLangLevel}">
-                        </div>
-                    </div>
-                </div>
-            `);
-        }
-
-        // ============ ADD PROJECT ============
-        function addProject(isFirst = false) {
-            projCount++;
-            const lb = labels[currentLang];
-            const removableClass = isFirst ? '' : 'removable';
-            document.getElementById('projects').insertAdjacentHTML('beforeend', `
-                <div class="item-card ${removableClass}" id="proj${projCount}">
-                    <button class="remove-btn" onclick="document.getElementById('proj${projCount}').remove()">×</button>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label data-field="projName">${lb.projName}</label>
-                            <input type="text" class="proj-name" data-ph-field="phProjName" placeholder="${lb.phProjName}">
-                        </div>
-                        <div class="form-group">
-                            <label data-field="projLink">${lb.projLink}</label>
-                            <input type="text" class="proj-link" data-ph-field="phProjLink" placeholder="${lb.phProjLink}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label data-field="projDesc">${lb.projDesc}</label>
-                        <textarea class="proj-desc" rows="2" data-ph-field="phProjDesc" placeholder="${lb.phProjDesc}"></textarea>
-                    </div>
-                </div>
-            `);
-        }
-
-        // ============ TOAST ============
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastText').textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3500);
-        }
-
-        // ============ GENERATE ============
-        async function generate() {
-            document.getElementById('loading').classList.add('show');
-            try {
-                const data = {
-                    language: document.getElementById('language').value,
-                    template: document.getElementById('template').value,
-                    full_name: document.getElementById('fullName').value,
-                    job_title: document.getElementById('jobTitle').value,
-                    email: document.getElementById('email').value,
-                    phone: document.getElementById('phone').value,
-                    location: document.getElementById('location').value,
-                    linkedin: document.getElementById('linkedin').value,
-                    summary: document.getElementById('summary').value,
-                    skills: document.getElementById('skills').value,
-                    experiences: [],
-                    education: [],
-                    certifications: [],
-                    languages: [],
-                    projects: []
-                };
-
-                // Collect experiences
-                document.querySelectorAll('.item-card[id^="exp"]').forEach(item => {
-                    data.experiences.push({
-                        title: item.querySelector('.exp-title').value,
-                        company: item.querySelector('.exp-company').value,
-                        start_date: item.querySelector('.exp-start').value,
-                        end_date: item.querySelector('.exp-end').value,
-                        description: item.querySelector('.exp-desc').value
-                    });
-                });
-
-                // Collect education
-                document.querySelectorAll('.item-card[id^="edu"]').forEach(item => {
-                    data.education.push({
-                        degree: item.querySelector('.edu-degree').value,
-                        school: item.querySelector('.edu-school').value,
-                        field: item.querySelector('.edu-field').value,
-                        year: item.querySelector('.edu-year').value
-                    });
-                });
-
-                // Collect certifications
-                document.querySelectorAll('.item-card[id^="cert"]').forEach(item => {
-                    data.certifications.push({
-                        name: item.querySelector('.cert-name').value,
-                        issuer: item.querySelector('.cert-issuer').value,
-                        year: item.querySelector('.cert-year').value
-                    });
-                });
-
-                // Collect languages
-                document.querySelectorAll('.item-card[id^="lng"]').forEach(item => {
-                    data.languages.push({
-                        language: item.querySelector('.lng-name').value,
-                        level: item.querySelector('.lng-level').value
-                    });
-                });
-
-                // Collect projects
-                document.querySelectorAll('.item-card[id^="proj"]').forEach(item => {
-                    data.projects.push({
-                        name: item.querySelector('.proj-name').value,
-                        description: item.querySelector('.proj-desc').value,
-                        link: item.querySelector('.proj-link').value
-                    });
-                });
-
-                const res = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${data.full_name.replace(/\s+/g, '_') || 'cv'}.pdf`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    const msg = currentLang === 'ar' ? 'تم تحميل السيرة الذاتية بنجاح! ✨' : 'CV downloaded successfully! ✨';
-                    showToast(msg);
-                } else {
-                    const err = await res.json();
-                    alert('Error: ' + (err.error || 'Unknown error'));
-                }
-            } catch (e) {
-                alert('Error: ' + e);
-            } finally {
-                document.getElementById('loading').classList.remove('show');
-            }
-        }
-
-        // ============ INIT ============
-        buildTemplateGrid();
-        addExp(true);
-        addEdu(true);
-    </script>
+    <script src="/static/app.js"></script>
 </body>
 
 </html>
