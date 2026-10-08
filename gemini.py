@@ -547,5 +547,45 @@ def translate_cv(cv_data, target_language):
     return _normalise(_call([{"text": instruction}], CV_SCHEMA, temperature=0.2))
 
 
+def list_models():
+    """Model names this key can actually reach, newest API first.
+
+    Model names are retired on Google's schedule, and a wrong one fails as
+    HTTP 404 - which looks identical to a broken deployment from the
+    outside. Asking the key itself turns that guess into a list.
+    """
+    if not GEMINI_API_KEY:
+        raise GeminiError("missing_key")
+
+    url = ("https://generativelanguage.googleapis.com/v1beta/models?key=%s"
+           % GEMINI_API_KEY)
+
+    try:
+        with urllib.request.urlopen(url, timeout=20) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+
+    except urllib.error.HTTPError as exc:
+        print("[GEMINI] models list HTTP %s: %s"
+              % (exc.code, exc.read().decode("utf-8", "replace")[:300]))
+        raise GeminiError("bad_key" if exc.code in (401, 403) else "upstream")
+
+    except Exception as exc:
+        print("[GEMINI] models list failed: %r" % (exc,))
+        raise GeminiError("upstream")
+
+    out = []
+
+    for model in payload.get("models", []):
+        name = (model.get("name") or "").replace("models/", "")
+        methods = model.get("supportedGenerationMethods", []) or []
+
+        # Only the ones that can answer a generateContent call are any use
+        # here; embedding models would be noise on the page.
+        if name and "generateContent" in methods:
+            out.append(name)
+
+    return sorted(out)
+
+
 def is_configured():
     return bool(GEMINI_API_KEY)

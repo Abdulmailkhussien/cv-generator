@@ -1243,6 +1243,37 @@ def sample_cv():
         return {"error": str(exc)}, 500
 
 
+@app.route('/admin/models')
+def admin_models():
+    """Which model names this deployment's key can reach.
+
+    Behind the same token as /admin/test. It exists because a wrong model
+    name returns 404 from Google, which from the outside is
+    indistinguishable from a broken deployment - and the fix is one
+    environment variable that nobody can guess.
+    """
+    if not ADMIN_TOKEN or request.args.get('t', '') != ADMIN_TOKEN:
+        abort(404)
+
+    lines = ["Configured GEMINI_MODEL: %s" % gemini.GEMINI_MODEL, ""]
+
+    try:
+        names = gemini.list_models()
+    except Exception as exc:
+        lines.append("Could not list models: %s" % exc)
+        return "<pre>" + "\n".join(lines) + "</pre>"
+
+    working = gemini.GEMINI_MODEL in names
+    lines.append("Currently configured model is %s" %
+                 ("AVAILABLE" if working else "NOT in the list below"))
+    lines.append("")
+    lines.append("Set GEMINI_MODEL in Render to one of these (prefer a 'flash'):")
+    lines.append("")
+    lines += ["  " + n for n in names]
+
+    return "<pre>" + "\n".join(lines) + "</pre>"
+
+
 @app.route('/api/translate', methods=['POST'])
 @limiter.limit("25 per hour")
 def api_translate():
