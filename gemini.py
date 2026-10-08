@@ -29,6 +29,7 @@ gains no new dependency.
 import base64
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
@@ -39,10 +40,39 @@ import urllib.request
 # git history after it is deleted.
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
-# Overridable because model names are retired on Google's schedule, not ours.
-# `curl https://generativelanguage.googleapis.com/v1beta/models?key=KEY` lists
-# what the key can actually reach today.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash").strip()
+# The default is an alias on purpose, not a pinned version.
+#
+# This deployment was first set to gemini-2.0-flash, which Google retired.
+# A retired name answers HTTP 404, every door stops working at once, and
+# from the outside it is indistinguishable from a broken deployment - the
+# kind of outage a user reports before the owner notices.
+#
+# An alias cannot fail that way. The cost is that behaviour may shift a
+# little as Google moves it, which for extraction and rephrasing is a far
+# gentler failure than silence.
+#
+# To pin a version instead, set GEMINI_MODEL in Render, and put a reminder
+# somewhere to revisit it. /admin/models?t=TOKEN lists what this key can
+# actually reach today.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest").strip()
+
+# The three jobs here are not equally hard, so they need not share a model.
+#
+# Reading a CV out of a document, a recording or pasted text is extraction:
+# the facts are already in front of the model and the work is moving them
+# into fields. A stronger model does not extract better, and on audio it
+# costs latency the user feels.
+#
+# Matching a CV to an advert is judgement - recognising that "led a team of
+# six" is evidence of leadership, that "built REST endpoints in Flask" is
+# evidence of API work. That is where a stronger model earns its price, and
+# it is also the feature worth being known for.
+#
+# Unset, matching uses the same model as everything else. Set
+# GEMINI_MODEL_MATCH to something stronger and compare the two on real
+# adverts before deciding - the only benchmark that counts here is your own
+# CVs in Arabic.
+GEMINI_MODEL_MATCH = os.environ.get("GEMINI_MODEL_MATCH", "").strip() or GEMINI_MODEL
 
 _ENDPOINT = (
     "https://generativelanguage.googleapis.com/v1beta/"
@@ -196,7 +226,27 @@ Field notes:
 
 # ============ TRANSPORT ============
 
-def _call(parts, schema, temperature=0.2):
+# Google answers 503 "experiencing high demand" at random under load, and
+# it means exactly what it says: try again. Handing that straight to a
+# person as "the service is unavailable" makes our problem theirs, when a
+# second attempt a moment later usually works.
+#
+# Two retries, not more. Each attempt on an audio upload costs real seconds
+# and the person is watching a spinner; past a point, telling them to try
+# again themselves is more honest than making them wait longer.
+RETRY_STATUSES = (500, 502, 503, 504)
+RETRY_ATTEMPTS = 3
+RETRY_BACKOFF = (1.5, 4.0)
+
+# A budget on the whole call, not on each attempt. An overloaded Google
+# answers 503 in under a second, so retrying costs almost nothing and is
+# worth doing. A request that hung for a minute is a different animal:
+# retrying it twice more would leave somebody staring at a spinner for
+# several minutes, which is worse than an honest "try again".
+RETRY_BUDGET_SECONDS = 45
+
+
+def _call(parts, schema, temperature=0.2, model=None):
     """One request to Gemini, returning the parsed JSON object."""
     if not GEMINI_API_KEY:
         raise GeminiError("missing_key")
@@ -212,35 +262,65 @@ def _call(parts, schema, temperature=0.2):
         },
     }).encode("utf-8")
 
-    url = _ENDPOINT % (GEMINI_MODEL, GEMINI_API_KEY)
-    req = urllib.request.Request(
-        url, data=body, headers={"Content-Type": "application/json"})
+    url = _ENDPOINT % (model or GEMINI_MODEL, GEMINI_API_KEY)
 
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+    payload = None
+    last = "upstream"
+    started = time.monotonic()
 
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", "replace")[:400]
+    for attempt in range(RETRY_ATTEMPTS):
+        req = urllib.request.Request(
+            url, data=body, headers={"Content-Type": "application/json"})
 
-        # The key must never reach a log or an error page - the URL carries
-        # it as a query parameter, so the URL itself is a secret.
-        print("[GEMINI] HTTP %s: %s" % (exc.code, detail))
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+            break
 
-        if exc.code in (401, 403):
-            raise GeminiError("bad_key")
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:400]
 
-        if exc.code == 429:
-            raise GeminiError("quota")
+            # The key must never reach a log or an error page - the URL
+            # carries it as a query parameter, so the URL itself is secret.
+            print("[GEMINI] HTTP %s (attempt %d/%d): %s"
+                  % (exc.code, attempt + 1, RETRY_ATTEMPTS, detail))
 
-        if exc.code == 404:
-            raise GeminiError("bad_model")
+            # These say something about the request, not the moment, so a
+            # second identical attempt would fail identically.
+            if exc.code in (401, 403):
+                raise GeminiError("bad_key")
 
-        raise GeminiError("upstream")
+            if exc.code == 404:
+                raise GeminiError("bad_model")
 
-    except Exception as exc:
-        print("[GEMINI] transport failure: %r" % (exc,))
-        raise GeminiError("upstream")
+            if exc.code == 429:
+                raise GeminiError("quota")
+
+            if exc.code == 400:
+                raise GeminiError("bad_request")
+
+            last = "busy" if exc.code in RETRY_STATUSES else "upstream"
+
+            if exc.code not in RETRY_STATUSES:
+                raise GeminiError("upstream")
+
+        except Exception as exc:
+            print("[GEMINI] transport failure (attempt %d/%d): %r"
+                  % (attempt + 1, RETRY_ATTEMPTS, exc))
+            last = "upstream"
+
+        if attempt >= RETRY_ATTEMPTS - 1:
+            break
+
+        if time.monotonic() - started > RETRY_BUDGET_SECONDS:
+            print("[GEMINI] giving up after %.0fs rather than retrying again"
+                  % (time.monotonic() - started))
+            break
+
+        time.sleep(RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)])
+
+    if payload is None:
+        raise GeminiError(last)
 
     try:
         candidate = payload["candidates"][0]
@@ -487,7 +567,8 @@ def match_job(cv_data, job_text, language="ar"):
         job_text[:20000],
     ])
 
-    result = _call([{"text": instruction}], MATCH_SCHEMA, temperature=0.3)
+    result = _call([{"text": instruction}], MATCH_SCHEMA,
+                   temperature=0.3, model=GEMINI_MODEL_MATCH)
 
     if not isinstance(result, dict):
         raise GeminiError("empty")

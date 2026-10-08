@@ -1056,7 +1056,16 @@ def test_telegram():
 # Sending the text from here would mean two places to edit for one message.
 def _ai_error(exc):
     code = str(exc) if isinstance(exc, gemini.GeminiError) else "upstream"
-    status = 429 if code == "quota" else 400 if code == "too_large" else 502
+
+    status = {
+        "quota": 429,
+        "too_large": 400,
+        "bad_request": 400,
+        # Google's own word for it, passed through honestly: the service is
+        # up, this moment is not.
+        "busy": 503,
+    }.get(code, 502)
+
     return jsonify({"ok": False, "error": code}), status
 
 
@@ -1255,7 +1264,11 @@ def admin_models():
     if not ADMIN_TOKEN or request.args.get('t', '') != ADMIN_TOKEN:
         abort(404)
 
-    lines = ["Configured GEMINI_MODEL: %s" % gemini.GEMINI_MODEL, ""]
+    lines = [
+        "GEMINI_MODEL       (import, translate): %s" % gemini.GEMINI_MODEL,
+        "GEMINI_MODEL_MATCH (job matching)     : %s" % gemini.GEMINI_MODEL_MATCH,
+        "",
+    ]
 
     try:
         names = gemini.list_models()
