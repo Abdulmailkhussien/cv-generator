@@ -1024,6 +1024,16 @@ def test_telegram():
                    + (f"  [{day}]" if day else ""))
     results.append(f"CVs generated: {generation_count}")
     results.append("")
+
+    # Reading the numbers used to fire the Telegram test as a side effect,
+    # so every glance at this page put a message and an empty test PDF on
+    # the owner's phone - mixed in with the real CVs it is meant to deliver.
+    # Checking a counter should not send anything to anybody.
+    if request.args.get('telegram') != '1':
+        results.append("Telegram test not run (it sends you a message and a")
+        results.append("test PDF). Add &telegram=1 to the URL to run it.")
+        return "<pre>" + "\n".join(results) + "</pre>"
+
     results.append(f"=== Telegram Monitor Test ===")
     results.append(f"Bot Token: {'SET (' + TELEGRAM_BOT_TOKEN[:8] + '...' + TELEGRAM_BOT_TOKEN[-4:] + ')' if TELEGRAM_BOT_TOKEN else 'NOT SET ❌'}")
     results.append(f"Chat ID: {TELEGRAM_CHAT_ID if TELEGRAM_CHAT_ID else 'NOT SET ❌'}")
