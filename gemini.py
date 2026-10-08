@@ -30,6 +30,7 @@ import base64
 import json
 import os
 import time
+from datetime import datetime, timezone
 import urllib.error
 import urllib.request
 
@@ -89,6 +90,52 @@ MAX_DOC_BYTES = 10 * 1024 * 1024
 # Audio and a long document both take real time. Render's own gateway gives up
 # well after this, so the limit that matters is the user's patience.
 TIMEOUT_SECONDS = 90
+
+
+# ============ A BUDGET YOU CONTROL ============
+#
+# Google's free allowance is a moving number, published by them and changed
+# without notice, so the code cannot assume one. What it can do is count its
+# own calls and stop before the day is gone.
+#
+# Why this matters more than the exact limit: without it, the first busy day
+# spends the whole allowance by mid-morning on whoever happened to arrive
+# first, and everyone after them meets a broken site. With it, you decide
+# the ceiling and know when you reached it.
+#
+# Set AI_DAILY_BUDGET in Render once you have seen a few real days in the AI
+# Studio usage page. 0 turns the cap off.
+#
+# The count lives in the process, which is correct here because Render runs
+# one worker (WEB_CONCURRENCY=1 in the deploy log). With more workers each
+# would keep its own tally and the real total would be higher.
+AI_DAILY_BUDGET = int(os.environ.get("AI_DAILY_BUDGET", "300") or 0)
+
+_calls_today = 0
+_calls_date = ""
+
+
+def usage():
+    """(calls so far today, budget, date) - for the admin page."""
+    return (_calls_today, AI_DAILY_BUDGET, _calls_date)
+
+
+def _count_call():
+    """Count one call, and refuse once the day's budget is spent."""
+    global _calls_today, _calls_date
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    if today != _calls_date:
+        _calls_date = today
+        _calls_today = 0
+
+    if AI_DAILY_BUDGET and _calls_today >= AI_DAILY_BUDGET:
+        print("[GEMINI] daily budget of %d reached; refusing until tomorrow"
+              % AI_DAILY_BUDGET)
+        raise GeminiError("budget")
+
+    _calls_today += 1
 
 
 class GeminiError(Exception):
@@ -250,6 +297,8 @@ def _call(parts, schema, temperature=0.2, model=None):
     """One request to Gemini, returning the parsed JSON object."""
     if not GEMINI_API_KEY:
         raise GeminiError("missing_key")
+
+    _count_call()
 
     body = json.dumps({
         "contents": [{"parts": parts}],

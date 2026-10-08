@@ -1000,8 +1000,13 @@ def test_telegram():
         abort(404)
 
     results = []
+    used, budget, day = gemini.usage()
+
     results.append(f"Visits: {visit_count}")
     results.append(f"Gemini: {'configured' if gemini.is_configured() else 'NOT configured'}")
+    results.append(f"AI calls today: {used}" + (f" / {budget}" if budget else " (no cap)")
+                   + (f"  [{day}]" if day else ""))
+    results.append(f"CVs generated: {generation_count}")
     results.append("")
     results.append(f"=== Telegram Monitor Test ===")
     results.append(f"Bot Token: {'SET (' + TELEGRAM_BOT_TOKEN[:8] + '...' + TELEGRAM_BOT_TOKEN[-4:] + ')' if TELEGRAM_BOT_TOKEN else 'NOT SET ❌'}")
@@ -1064,6 +1069,8 @@ def _ai_error(exc):
         # Google's own word for it, passed through honestly: the service is
         # up, this moment is not.
         "busy": 503,
+        # Our own ceiling, not Google's. Same meaning to the visitor.
+        "budget": 429,
     }.get(code, 502)
 
     return jsonify({"ok": False, "error": code}), status
