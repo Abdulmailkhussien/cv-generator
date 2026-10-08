@@ -674,7 +674,67 @@ def translate_cv(cv_data, target_language):
         json.dumps(cv_data, ensure_ascii=False)[:20000],
     ])
 
-    return _normalise(_call([{"text": instruction}], CV_SCHEMA, temperature=0.2))
+    out = _normalise(_call([{"text": instruction}], CV_SCHEMA, temperature=0.2))
+
+    return _keep_facts(cv_data, out)
+
+
+# Fields that are the same in any language: an address, a date, a phone
+# number. The prompt says not to touch them, but a prompt is a request and
+# this is a guarantee - the model only has to drift once on somebody's
+# employment dates for the document to be wrong in a way they will not
+# notice until an interviewer does.
+_COPY_FLAT = ("email", "phone", "linkedin")
+
+# Dates may hold a word instead of a number - "الآن", "Present" - and that
+# word does need translating, so these are pinned only when they carry
+# digits.
+_COPY_DATES = {
+    "experiences": ("start_date", "end_date"),
+    "education": ("year",),
+    "certifications": ("year",),
+}
+
+# A URL is a URL in every language and never carries digits of its own, so
+# it is pinned unconditionally.
+_COPY_EXACT = {
+    "projects": ("link",),
+}
+
+
+def _keep_facts(source, translated):
+    """Put the untranslatable facts back, exactly as they were."""
+    for key in _COPY_FLAT:
+        translated[key] = source.get(key, "") or ""
+
+    for list_key in set(list(_COPY_DATES) + list(_COPY_EXACT)):
+        src_rows = source.get(list_key) or []
+        out_rows = translated.get(list_key) or []
+
+        # A translation that gained or lost a row has reordered somebody's
+        # history. Copying positionally would then attach one job's dates to
+        # another, which is worse than leaving it alone - so say so in the
+        # log and do not touch that list.
+        if len(src_rows) != len(out_rows):
+            print("[GEMINI] translation changed %s from %d rows to %d; "
+                  "leaving its dates as returned"
+                  % (list_key, len(src_rows), len(out_rows)))
+            continue
+
+        for src, out_row in zip(src_rows, out_rows):
+            if not isinstance(src, dict) or not isinstance(out_row, dict):
+                continue
+
+            for field in _COPY_DATES.get(list_key, ()):
+                original = src.get(field, "") or ""
+
+                if original and any(ch.isdigit() for ch in original):
+                    out_row[field] = original
+
+            for field in _COPY_EXACT.get(list_key, ()):
+                out_row[field] = src.get(field, "") or ""
+
+    return translated
 
 
 def list_models():
