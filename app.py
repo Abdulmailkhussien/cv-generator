@@ -45,6 +45,15 @@ generation_count = 0
 # gap between them is the thing worth watching.
 visit_count = 0
 
+# Counters live in the process, and Render starts a fresh one on every
+# deploy, so they measure "since this process started" and nothing longer.
+# Reading them as all-time numbers would make a working site look dead on
+# any day you pushed a change.
+#
+# The durable record already exists: Telegram gets a message per generated
+# CV, and that history survives every restart. These are the live view.
+started_at = datetime.now()
+
 # /admin/test sends to your Telegram and prints your chat id. Without a
 # secret, any visitor can read it and flood you. Set ADMIN_TOKEN in Render
 # and reach it at /admin/test?t=<value>; leave it unset and the route is off.
@@ -1002,6 +1011,13 @@ def test_telegram():
     results = []
     used, budget, day = gemini.usage()
 
+    up = datetime.now() - started_at
+    hours = up.days * 24 + up.seconds // 3600
+    mins = (up.seconds % 3600) // 60
+
+    results.append(f"--- since this process started, {hours}h {mins}m ago ---")
+    results.append(f"(a deploy restarts the process and resets these)")
+    results.append("")
     results.append(f"Visits: {visit_count}")
     results.append(f"Gemini: {'configured' if gemini.is_configured() else 'NOT configured'}")
     results.append(f"AI calls today: {used}" + (f" / {budget}" if budget else " (no cap)")

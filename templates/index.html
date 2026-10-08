@@ -163,12 +163,25 @@
 
         /* ============ STEP 1 ============ */
 
-        .doors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+        /* Flex rather than grid, because of `order` below. The three panels
+           live inside this container so that on a phone each one opens
+           directly beneath the door that opened it - tapping the first door
+           used to reveal the recorder below the third, a whole screen away. */
+        .doors { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 22px; }
+        .door { flex: 1 1 0; min-width: 0; }
 
-        /* One column on a phone. Three doors side by side become three
-           unreadable slivers, and the phone is exactly where the voice door
-           earns its place. */
-        @media (max-width: 760px) { .doors { grid-template-columns: 1fr; } }
+        /* On a wide screen the three doors stay on one row and the open
+           panel drops below all of them. */
+        .panel { width: 100%; order: 10; }
+
+        @media (max-width: 760px) {
+            .doors { flex-direction: column; }
+
+            /* One column: interleave each panel with its own door. */
+            #doorVoice { order: 1; } #panelVoice { order: 2; }
+            #doorFile  { order: 3; } #panelFile  { order: 4; }
+            #doorText  { order: 5; } #panelText  { order: 6; }
+        }
 
         .door {
             cursor: pointer; text-align: center; padding: 26px 16px; border-radius: 14px;
@@ -181,7 +194,7 @@
         .door-title { font-weight: 700; margin-top: 10px; }
         .door-hint { font-size: .8rem; color: var(--ink-faint); margin-top: 4px; }
 
-        .panel { display: none; margin-top: 18px; padding: 22px; border-radius: 14px; background: var(--surface-2); }
+        .panel { display: none; padding: 22px; border-radius: 14px; background: var(--surface-2); }
         .panel.on { display: block; }
 
         .manual-link {
@@ -305,7 +318,12 @@
             position: sticky; top: 18px; border: 1px solid var(--line);
             border-radius: 14px; overflow: hidden; background: var(--surface-2);
         }
-        .preview-box iframe { width: 100%; height: 640px; border: 0; display: block; background: #fff; }
+        /* Drawn with pdf.js onto a canvas instead of handed to the browser
+           as a PDF. Android Chrome refuses to render a PDF inside an iframe
+           and offers a download link instead, which on a phone - where most
+           of these visits come from - meant no preview at all. */
+        .preview-box canvas { width: 100%; height: auto; display: block; background: #fff; }
+        .preview-note { padding: 10px 14px; font-size: .78rem; color: var(--ink-faint); text-align: center; }
         .preview-empty { display: grid; place-items: center; height: 420px; color: var(--ink-faint); text-align: center; padding: 20px; }
 
         .btn {
@@ -456,18 +474,6 @@
                         <div class="door-title" data-ar="احكِ عن نفسك" data-en="Just talk">احكِ عن نفسك</div>
                         <div class="door-hint" data-ar="دقيقة ونصف، بلا كتابة" data-en="90 seconds, no typing">دقيقة ونصف، بلا كتابة</div>
                     </div>
-                    <div class="door" id="doorFile" onclick="openDoor('file')">
-                        <div class="door-icon">📄</div>
-                        <div class="door-title" data-ar="ارفع سيرتك الحالية" data-en="Upload a CV">ارفع سيرتك الحالية</div>
-                        <div class="door-hint" data-ar="PDF أو Word" data-en="PDF or Word">PDF أو Word</div>
-                    </div>
-                    <div class="door" id="doorText" onclick="openDoor('text')">
-                        <div class="door-icon">✨</div>
-                        <div class="door-title" data-ar="الصقها من الذكاء الاصطناعي" data-en="Paste from AI">الصقها من الذكاء الاصطناعي</div>
-                        <div class="door-hint" data-ar="كلود، ChatGPT، Gemini" data-en="Claude, ChatGPT, Gemini">كلود، ChatGPT، Gemini</div>
-                    </div>
-                </div>
-
                 <div class="panel" id="panelVoice">
                     <div class="rec-row">
                         <button class="rec-btn" id="recBtn" onclick="toggleRec()">🎙️</button>
@@ -484,6 +490,11 @@
                         العادية. ملاحظة: نكتب ما تقوله فقط — إن لم تذكر تواريخ نتركها فارغة ولا نخمّنها.</p>
                 </div>
 
+                    <div class="door" id="doorFile" onclick="openDoor('file')">
+                        <div class="door-icon">📄</div>
+                        <div class="door-title" data-ar="ارفع سيرتك الحالية" data-en="Upload a CV">ارفع سيرتك الحالية</div>
+                        <div class="door-hint" data-ar="PDF أو Word" data-en="PDF or Word">PDF أو Word</div>
+                    </div>
                 <div class="panel" id="panelFile">
                     <div class="drop" id="drop" onclick="document.getElementById('cvFile').click()">
                         <div style="font-size:1.8rem">📄</div>
@@ -496,6 +507,12 @@
                     <input type="file" id="cvFile" accept=".pdf,.docx" style="display:none" onchange="uploadCV(this.files[0])">
                 </div>
 
+                    <div class="door" id="doorText" onclick="openDoor('text')">
+                        <div class="door-icon">✨</div>
+                        <div class="door-title" data-ar="الصقها من الذكاء الاصطناعي" data-en="Paste from AI">الصقها من الذكاء الاصطناعي</div>
+                        <div class="door-hint" data-ar="كلود، ChatGPT، Gemini" data-en="Claude, ChatGPT, Gemini">كلود، ChatGPT، Gemini</div>
+                    </div>
+
                 <div class="panel" id="panelText">
                     <div class="field">
                         <label data-ar="الصق سيرتك أو أي نص يصف خبرتك"
@@ -505,6 +522,8 @@
                             data-ph-en="Ask Claude or ChatGPT to write your CV, then paste the result here as it is..."
                             placeholder="اطلب من كلود أو ChatGPT أن يكتب سيرتك، ثم الصق الناتج هنا كما هو..."></textarea>
                     </div>
+                </div>
+
                     <button class="btn" onclick="importText()" data-ar="حوّلها إلى سيرة" data-en="Turn it into a CV">حوّلها إلى سيرة</button>
                 </div>
 
@@ -646,10 +665,12 @@
                         </div>
                     </div>
 
+                    <!-- One forward action at a time, walking the sections in
+                         order. Only the last section offers the jump to step 3,
+                         so nobody lands on the download screen half finished. -->
                     <div class="foot-nav">
-                        <button class="btn ghost" onclick="goStep(1)" data-ar="رجوع" data-en="Back">رجوع</button>
-                        <button class="btn" onclick="goStep(3)" data-ar="التالي: الشكل والتحميل"
-                            data-en="Next: look and download">التالي: الشكل والتحميل</button>
+                        <button class="btn ghost" id="prevBtn" onclick="sheetBack()"></button>
+                        <button class="btn" id="nextBtn" onclick="sheetNext()"></button>
                     </div>
                 </div>
             </div>
@@ -680,15 +701,6 @@
                             data-ar="رجوع للتعديل" data-en="Back to editing">رجوع للتعديل</button>
                     </div>
 
-                    <div class="card" style="padding:20px;margin-top:18px">
-                        <h2 style="font-size:1.02rem">🎯 <span data-ar="فصّلها على وظيفة" data-en="Tailor to a job">فصّلها على وظيفة</span></h2>
-                        <p class="lede" style="font-size:.84rem"
-                            data-ar="سيرة واحدة لا تناسب كل إعلان. الصق الإعلان ونقول لك ما ينقص."
-                            data-en="One CV does not fit every advert. Paste one and see what is missing.">
-                            سيرة واحدة لا تناسب كل إعلان. الصق الإعلان ونقول لك ما ينقص.</p>
-                        <button class="btn ghost block" style="margin-top:14px" onclick="goStep('tailor')"
-                            data-ar="افتح الفحص" data-en="Open the check">افتح الفحص</button>
-                    </div>
                 </div>
 
                 <div class="preview-box" id="previewBox">
@@ -760,6 +772,7 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
 

@@ -131,6 +131,7 @@ function setLang(lang) {
     buildNav();
     buildTemplates();
     relabelItems();
+    updateSheetNav();
 
     if (currentStep === 3) schedulePreview();
 }
@@ -183,13 +184,56 @@ function buildNav() {
     markProgress();
 }
 
-function openSheet(key) {
+function openSheet(key, scroll) {
     currentSheet = key;
 
     document.querySelectorAll('.sheet').forEach(s =>
         s.classList.toggle('on', s.dataset.sheet === key));
     document.querySelectorAll('[data-nav]').forEach(b =>
         b.classList.toggle('on', b.dataset.nav === key));
+
+    updateSheetNav();
+
+    // After "next" the person is at the bottom of the page looking at a
+    // button; without this they would be staring at the footer of a section
+    // they have not seen the top of.
+    if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function sheetIndex() {
+    return Math.max(0, SHEETS.findIndex(s => s.key === currentSheet));
+}
+
+// The labels change with position, so there is never more than one forward
+// action on screen and it always says where it goes.
+function updateSheetNav() {
+    const i = sheetIndex();
+    const prev = $('prevBtn');
+    const next = $('nextBtn');
+
+    if (!prev || !next) return;
+
+    const lb = LABELS[currentLang];
+
+    prev.textContent = i === 0
+        ? T('رجوع', 'Back')
+        : T('السابق: ', 'Back: ') + lb[SHEETS[i - 1].label];
+
+    next.textContent = i === SHEETS.length - 1
+        ? T('التالي: الشكل والتحميل', 'Next: look and download')
+        : T('التالي: ', 'Next: ') + lb[SHEETS[i + 1].label];
+}
+
+function sheetBack() {
+    const i = sheetIndex();
+    if (i === 0) { goStep(1); return; }
+    openSheet(SHEETS[i - 1].key, true);
+}
+
+function sheetNext() {
+    const i = sheetIndex();
+    if (i === SHEETS.length - 1) { goStep(3); return; }
+    openSheet(SHEETS[i + 1].key, true);
 }
 
 // A tick per finished section. Twenty-seven empty boxes give no sense of
@@ -436,11 +480,66 @@ async function renderPreview() {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = URL.createObjectURL(blob);
 
-        $('previewBox').innerHTML =
-            `<iframe src="${previewUrl}#toolbar=0&navpanes=0" title="${T('معاينة السيرة', 'CV preview')}"></iframe>`;
+        await paintPreview(await blob.arrayBuffer(), seq);
 
     } catch (e) {
         /* A failed preview is not worth interrupting anyone over. */
+    }
+}
+
+/* Drawing the PDF rather than embedding it.
+   Android Chrome will not render a PDF inside an iframe: it shows a file
+   name and an "open" link, which on a phone - where most of these visits
+   come from - meant the preview simply did not exist. Painting page one
+   onto a canvas behaves the same everywhere, so there is one code path
+   rather than a guess about the device. */
+
+async function paintPreview(buffer, seq) {
+    const box = $('previewBox');
+
+    if (!window.pdfjsLib) {
+        // The CDN is blocked or slow. An embed still works on a desktop, so
+        // fall back to it rather than showing nothing.
+        box.innerHTML = `<iframe src="${previewUrl}#toolbar=0&navpanes=0"
+            style="width:100%;height:640px;border:0;display:block;background:#fff"
+            title="${T('معاينة السيرة', 'CV preview')}"></iframe>`;
+        return;
+    }
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    if (seq !== previewSeq) return;
+
+    const page = await pdf.getPage(1);
+    const canvas = document.createElement('canvas');
+
+    // Render above CSS size so the page stays sharp on a phone's dense
+    // screen; the canvas is then scaled down by the stylesheet.
+    const width = Math.max(box.clientWidth || 360, 360);
+    const base = page.getViewport({ scale: 1 });
+    const scale = (width / base.width) * Math.min(window.devicePixelRatio || 1, 2);
+    const viewport = page.getViewport({ scale });
+
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+    if (seq !== previewSeq) return;
+
+    box.innerHTML = '';
+    box.appendChild(canvas);
+
+    if (pdf.numPages > 1) {
+        const note = document.createElement('div');
+        note.className = 'preview-note';
+        note.textContent = T(
+            `الصفحة 1 من ${pdf.numPages} — الملف المحمّل يحتوي كل الصفحات`,
+            `Page 1 of ${pdf.numPages} — the download has them all`);
+        box.appendChild(note);
     }
 }
 
