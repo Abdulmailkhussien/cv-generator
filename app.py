@@ -1313,6 +1313,12 @@ def admin_models():
     lines.append("Currently configured model is %s" %
                  ("AVAILABLE" if working else "NOT in the list below"))
     lines.append("")
+    lines.append("CAUTION: this is what Google knows about, not what this")
+    lines.append("account may use. Some names here answer 404 'no longer")
+    lines.append("available to new users' when actually called, and the error")
+    lines.append("names the replacement - check the Render log after setting")
+    lines.append("one. Avoid anything with -preview, -tts, -image or lyria.")
+    lines.append("")
     lines.append("Set GEMINI_MODEL in Render to one of these (prefer a 'flash'):")
     lines.append("")
     lines += ["  " + n for n in names]
